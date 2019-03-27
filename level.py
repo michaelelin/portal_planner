@@ -1,11 +1,13 @@
 import json
 import math
 
+from entity import Entity
 from search import AStarSearch
 
 class Level:
-    def __init__(self, walls, start):
+    def __init__(self, walls, entities, start):
         self.walls = walls
+        self.entities = entities
         self.start = start
         self._navigation = None
 
@@ -29,6 +31,8 @@ class Level:
             node.draw(canvas)
         for wall in self.walls:
             wall.draw(canvas)
+        for entity in self.entities:
+            entity.draw(canvas)
 
         start_x, start_y = self.start
         canvas.create_oval(start_x - 0.3, start_y - 0.3, start_x + 0.3, start_y + 0.3, fill='red')
@@ -38,8 +42,10 @@ class Level:
         with open(filename) as f:
             obj = json.load(f)
         walls = [Wall.deserialize(wall) for wall in obj['walls']]
+        entities = ([Entity.deserialize(entity) for entity in obj['entities']]
+                    if 'entities' in obj else [])
         start = tuple(obj['start'])
-        return Level(walls, start)
+        return Level(walls, entities, start)
 
 class Wall:
     def __init__(self, pos1, pos2):
@@ -63,9 +69,19 @@ class Wall:
 
     @staticmethod
     def deserialize(obj):
+        wall_type = obj.get('type')
+        if wall_type == 'door':
+            wall_cls = Door
+        else:
+            wall_cls = Wall
+
         pos1 = tuple(obj['pos1'])
         pos2 = tuple(obj['pos2'])
-        return Wall(pos1, pos2)
+        return wall_cls(pos1, pos2)
+
+class Door(Wall):
+    def draw(self, canvas):
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill="green")
 
 
 class NavigationGraph:

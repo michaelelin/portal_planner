@@ -20,10 +20,14 @@ class LevelCanvas(tk.Canvas):
         center_x = (x_min + x_max) * 0.5
         center_y = (y_min + y_max) * 0.5
 
+        level_width = x_max - x_min
+        level_height = y_max - y_min
+        scale = min((self.width - 50) / level_width, (self.height - 50) / level_height)
+
         # A stack of Transforms
         self.transform = [
             Translate(-center_x, -center_y),
-            Dilate(30.0),
+            Dilate(scale),
             Translate(self.width * 0.5, self.width * 0.5),
         ]
         self.inverse_transform = [t.inverse() for t in reversed(self.transform)]
