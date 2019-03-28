@@ -28,7 +28,7 @@ class LevelCanvas(tk.Canvas):
         self.transform = [
             Translate(-center_x, -center_y),
             Dilate(scale),
-            Translate(self.width * 0.5, self.width * 0.5),
+            Translate(self.width * 0.5, self.height * 0.5),
         ]
         self.inverse_transform = [t.inverse() for t in reversed(self.transform)]
 
@@ -56,10 +56,11 @@ class LevelCanvas(tk.Canvas):
     def handle_click(self, event):
         path = self.level.navigation().search(self.level.start,
                                               self.preimage_point((event.x, event.y)))
-        for line_id in self.path_lines:
-            self.delete(line_id)
-        self.path_lines = [self.create_line(node1.x, node1.y, node2.x, node2.y)
-                           for node1, node2 in zip(path, path[1:])]
+        if path is not None:
+            for line_id in self.path_lines:
+                self.delete(line_id)
+            self.path_lines = [self.create_line(node1.x, node1.y, node2.x, node2.y)
+                               for node1, node2 in zip(path, path[1:])]
 
 class Transform:
     def apply(self, pos):
@@ -99,13 +100,10 @@ if __name__ == '__main__':
 
     root = tk.Tk()
     app = tk.Frame(root)
-    canvas = LevelCanvas(app, level)
+    canvas = LevelCanvas(app, level, width=800, height=400)
     canvas.pack()
 
     level.draw(canvas)
-    # path = level.navigation().search((0.5, 3.5), (-0.5, -3.5))
-    # for node1, node2 in zip(path, path[1:]):
-        # canvas.create_line(node1.x, node1.y, node2.x, node2.y)
 
     app.pack()
     root.mainloop()

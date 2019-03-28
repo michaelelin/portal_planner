@@ -1,3 +1,5 @@
+import geometry
+
 class Entity:
     def draw(self, canvas):
         pass
@@ -15,7 +17,7 @@ class Portal(Entity):
     def draw(self, canvas):
         x1, y1 = self.pos1
         x2, y2 = self.pos2
-        canvas.create_line(x1, y1, x2, y2, width=3.0, fill=self.__class__.COLOR)
+        canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1), width=3.0, fill=self.__class__.COLOR)
 
     @classmethod
     def deserialize(cls, obj):

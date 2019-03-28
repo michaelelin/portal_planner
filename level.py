@@ -3,6 +3,7 @@ import math
 
 from entity import Entity
 from search import AStarSearch
+from wall import Wall
 
 class Level:
     def __init__(self, walls, entities, start):
@@ -41,47 +42,11 @@ class Level:
     def load(filename):
         with open(filename) as f:
             obj = json.load(f)
-        walls = [Wall.deserialize(wall) for wall in obj['walls']]
+        walls = sum((Wall.deserialize(wall) for wall in obj['walls']), []) # Concat the lists together
         entities = ([Entity.deserialize(entity) for entity in obj['entities']]
                     if 'entities' in obj else [])
         start = tuple(obj['start'])
         return Level(walls, entities, start)
-
-class Wall:
-    def __init__(self, pos1, pos2):
-        self.x1, self.y1 = pos1
-        self.x2, self.y2 = pos2
-
-    # https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
-    def intersects(self, pos1, pos2):
-        x3, y3 = pos1
-        x4, y4 = pos2
-        det = ((self.x1 - self.x2) * (y3 - y4)) - ((self.y1 - self.y2) * (x3 - x4))
-        if det != 0:
-            t = float(((self.x1 - x3) * (y3 - y4)) - ((self.y1 - y3) * (x3 - x4))) / det
-            u = float(((self.x1 - self.x2) * (self.y1 - y3)) - ((self.y1 - self.y2) * (self.x1 - x3))) / -det
-            return 0.0 <= t and t <= 1.0 and 0.0 <= u and u <= 1.0
-        else:
-            return False
-
-    def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0)
-
-    @staticmethod
-    def deserialize(obj):
-        wall_type = obj.get('type')
-        if wall_type == 'door':
-            wall_cls = Door
-        else:
-            wall_cls = Wall
-
-        pos1 = tuple(obj['pos1'])
-        pos2 = tuple(obj['pos2'])
-        return wall_cls(pos1, pos2)
-
-class Door(Wall):
-    def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill="green")
 
 
 class NavigationGraph:
@@ -116,21 +81,19 @@ class NavigationGraph:
 
     def closest_node(self, pos):
         # Just search through the nodes linearly since nodes won't necessarily be laid out in a
-        # grid. Could use a smarter algorithm in the future to find the closest point.
-        x, y = pos
-        min_dist_squared = None
-        closest_node = None
+        # grid. Could use a smarter algorithm in the future to prune the search space.
         for node in self.nodes.values():
-            dist_squared = (node.x - x) * (node.x - x) + (node.y - y) * (node.y - y)
-            if min_dist_squared is None or dist_squared < min_dist_squared:
-                min_dist_squared = dist_squared
-                closest_node = node
-        return closest_node
+            if node.contains(*pos):
+                return node
+        return None
 
     def search(self, start_pos, target_pos):
         start = self.closest_node(start_pos)
         target = self.closest_node(target_pos)
-        return AStarSearch(start, target).search()
+        if start and target:
+            return AStarSearch(start, target).search()
+        else:
+            return None
 
 
 class NavigationNode:
@@ -148,6 +111,9 @@ class NavigationNode:
         dx = self.x - other.x
         dy = self.y - other.y
         return math.sqrt(dx * dx + dy * dy)
+
+    def contains(self, x, y):
+        return x >= self.x - 0.5 and x <= self.x + 0.5 and y >= self.y - 0.5 and y <= self.y + 0.5
 
     def draw(self, canvas):
         canvas.create_rectangle(self.x - 0.5, self.y - 0.5,
