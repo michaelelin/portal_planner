@@ -34,6 +34,10 @@ class Door(Wall):
     def draw(self, canvas):
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill="green")
 
+class Grill(Wall):
+    def draw(self, canvas):
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, fill="light blue")
+
 class Ledge(Wall):
     def draw(self, canvas):
         super().draw(canvas)
@@ -46,5 +50,6 @@ class Ledge(Wall):
 WALL_TYPES = {
     'wall': Wall,
     'door': Door,
+    'grill': Grill,
     'ledge': Ledge
 }
