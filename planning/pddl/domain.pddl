@@ -5,6 +5,7 @@
     location entity connector - object
     button room void - location
     movable switch portal - entity
+    portal1 portal2 - portal
     door grill - connector
     player item - movable
     cube - item
@@ -93,8 +94,7 @@
                 ?to - room
                 )
    :precondition (and (at ?player ?from)
-                      (or (connector-connects ?door ?from ?to)
-                          (connector-connects ?door ?to ?from))
+                      (connector-connects ?door ?from ?to)
                       (forall (?button - button)
                               (imply (door-requires ?door ?button)
                                      (exists (?m - movable)
@@ -113,8 +113,7 @@
    ; For now, just don't allow to walk in with an item
    ; instead of vaporizing it
    :precondition (and (at ?player ?from)
-                      (or (connector-connects ?grill ?from ?to)
-                          (connector-connects ?grill ?to ?from))
+                      (connector-connects ?grill ?from ?to)
                       (not (exists (?o - item)
                                    (carrying ?player ?o)))
                       (not (exists (?p - portal)
@@ -136,8 +135,7 @@
    ; For now, just don't allow to walk in with an item
    ; instead of vaporizing it
    :precondition (and (at ?player ?from)
-                      (or (connector-connects ?grill ?from ?to)
-                          (connector-connects ?grill ?to ?from))
+                      (connector-connects ?grill ?from ?to)
                       (not (exists (?o - item)
                                    (carrying ?player ?o)))
                       (and (can-create-portal ?player ?p1)
@@ -162,8 +160,7 @@
    ; For now, just don't allow to walk in with an item
    ; instead of vaporizing it
    :precondition (and (at ?player ?from)
-                      (or (connector-connects ?grill ?from ?to)
-                          (connector-connects ?grill ?to ?from))
+                      (connector-connects ?grill ?from ?to)
                       (not (exists (?o - item)
                                    (carrying ?player ?o)))
                       (and (can-create-portal ?player portal1)

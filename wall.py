@@ -1,6 +1,7 @@
 import tkinter as tk
 
 import geometry
+import planning.objects
 
 class Wall:
     def __init__(self, pos1, pos2):
@@ -8,6 +9,9 @@ class Wall:
         self.x2, self.y2 = pos2
 
     # https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+    # Returns: 0 if no intersection
+    #          1 if positive intersection
+    #         -1 if negative intersection
     def intersects(self, pos1, pos2):
         x3, y3 = pos1
         x4, y4 = pos2
@@ -15,26 +19,39 @@ class Wall:
         if det != 0:
             t = float(((self.x1 - x3) * (y3 - y4)) - ((self.y1 - y3) * (x3 - x4))) / det
             u = float(((self.x1 - self.x2) * (self.y1 - y3)) - ((self.y1 - self.y2) * (self.x1 - x3))) / -det
-            return 0.0 <= t and t <= 1.0 and 0.0 <= u and u <= 1.0
-        else:
-            return False
+            if 0.0 <= t and t <= 1.0 and 0.0 <= u and u <= 1.0:
+                if det > 0:
+                    return 1
+                else:
+                    return -1
+        return 0
 
     def draw(self, canvas):
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
 
     @staticmethod
     def deserialize(obj):
-        wall_type = obj.get('type') or 'wall'
+        wall_type = obj.pop('type', 'wall')
         wall_cls = WALL_TYPES[wall_type]
 
-        vertices = obj['vertices']
-        return [wall_cls(tuple(pos1), tuple(pos2)) for pos1, pos2 in zip(vertices, vertices[1:])]
+        vertices = obj.pop('vertices')
 
-class Door(Wall):
+        return [wall_cls(tuple(pos1), tuple(pos2), **obj) for pos1, pos2 in zip(vertices, vertices[1:])]
+
+class Door(Wall, planning.objects.Door):
+    def __init__(self, pos1, pos2, triggers):
+        Wall.__init__(self, pos1, pos2)
+        planning.objects.Door.__init__(self)
+        self.triggers = triggers
+
     def draw(self, canvas):
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill="green")
 
-class Grill(Wall):
+class Grill(Wall, planning.objects.Grill):
+    def __init__(self, pos1, pos2):
+        Wall.__init__(self, pos1, pos2)
+        planning.objects.Grill.__init__(self)
+
     def draw(self, canvas):
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, fill="light blue")
 

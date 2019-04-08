@@ -21,5 +21,6 @@
     (can-create-portal-at room2 room1)
     (can-create-portal-at room2 room2)
     (connector-connects door1 room1 room3)
+    (connector-connects door1 room3 room1)
     (door-requires door1 button1))
   (:goal (at p1 room3)))

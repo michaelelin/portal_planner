@@ -19,5 +19,6 @@
     (at portal1 room1)
     (at portal2 room2)
     (connector-connects door1 room3 room4)
+    (connector-connects door1 room4 room3)
     (door-requires door1 button1))
   (:goal (at p1 room4)))

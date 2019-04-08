@@ -27,6 +27,7 @@
     (connected room1 button2)
     (connected button2 room1)
     (connector-connects door1 room1 room5)
+    (connector-connects door1 room5 room1)
     (door-requires door1 button1)
     (door-requires door1 button2)
     (can-create-portal-at room1 room1)

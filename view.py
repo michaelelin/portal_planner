@@ -54,12 +54,13 @@ class LevelCanvas(tk.Canvas):
         return super().create_oval(x1_new, y1_new, x2_new, y2_new, **options)
 
     def handle_click(self, event):
-        path = self.level.navigation().search(self.level.start,
+        path = self.level.navigation.search(self.level.start,
                                               self.preimage_point((event.x, event.y)))
         if path is not None:
             for line_id in self.path_lines:
                 self.delete(line_id)
-            self.path_lines = [self.create_line(node1.x, node1.y, node2.x, node2.y)
+            self.path_lines = [self.create_line(node1.x + 0.5, node1.y + 0.5,
+                                                node2.x + 0.5, node2.y + 0.5)
                                for node1, node2 in zip(path, path[1:])]
 
 class Transform:
@@ -88,10 +89,6 @@ class Dilate(Transform):
 
     def inverse(self):
         return Dilate(1.0 / self.scale)
-
-
-def handle_click(event):
-    print(event)
 
 
 if __name__ == '__main__':

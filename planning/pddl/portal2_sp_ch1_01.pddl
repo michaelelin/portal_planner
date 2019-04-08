@@ -29,6 +29,7 @@
     (connected button1 room4)
 
     (connector-connects door1 room5 room6)
+    (connector-connects door1 room6 room5)
     (door-requires door1 button1)
 
     (switch-activates-portal switch1 portal2 room4)

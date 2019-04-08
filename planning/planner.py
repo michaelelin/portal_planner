@@ -1,15 +1,12 @@
-import urllib2, json, sys
+import requests
 
-data = {'domain': open(sys.argv[1], 'r').read(),
-        'problem': open(sys.argv[2], 'r').read()}
+class Planner:
+    def __init__(self, problem):
+        self.problem = problem
+        with open('planning/pddl/domain.pddl', 'r') as domain_file:
+            self.domain = domain_file.read()
 
-req = urllib2.Request('http://solver.planning.domains/solve')
-req.add_header('Content-Type', 'application/json')
-resp = json.loads(urllib2.urlopen(req, json.dumps(data)).read())
-
-if ('plan' in resp['result']):
-    print('\n'.join([act['name'] for act in resp['result']['plan']]))
-else:
-    print(resp['result']['output'])
-# with open(sys.argv[3], 'w') as f:
-    # f.write('\n'.join([act['name'] for act in resp['result']['plan']]))
+    def plan(self):
+        data = { 'domain': self.domain, 'problem': self.problem.serialize() }
+        r = requests.post('http://solver.planning.domains/solve', data=data)
+        return [action['name'] for action in r.json()['result']['plan']]

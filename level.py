@@ -1,21 +1,28 @@
 import json
-import math
+import os
 
 from entity import Entity
-from search import AStarSearch
+from navigation import NavigationGraph
 from wall import Wall
+from planning.problem import Problem
 
 class Level:
-    def __init__(self, walls, entities, start):
+    def __init__(self, name, walls, entities, start, goal):
+        self.name = name
         self.walls = walls
         self.entities = entities
         self.start = start
+        self.goal = goal
         self._navigation = None
 
+    @property
     def navigation(self):
         if not self._navigation:
-            self._navigation = NavigationGraph(self.walls, self.start)
+            self._navigation = NavigationGraph(self)
         return self._navigation
+
+    def planning_problem(self):
+        return Problem(self)
 
     def bounds(self):
         (x_min, y_min) = self.start
@@ -28,7 +35,7 @@ class Level:
         return (x_min, y_min, x_max, y_max)
 
     def draw(self, canvas):
-        for node in self.navigation().nodes.values():
+        for node in self.navigation.nodes.values():
             node.draw(canvas)
         for wall in self.walls:
             wall.draw(canvas)
@@ -42,86 +49,10 @@ class Level:
     def load(filename):
         with open(filename) as f:
             obj = json.load(f)
+        name = obj['name']
         walls = sum((Wall.deserialize(wall) for wall in obj['walls']), []) # Concat the lists together
         entities = ([Entity.deserialize(entity) for entity in obj['entities']]
                     if 'entities' in obj else [])
         start = tuple(obj['start'])
-        return Level(walls, entities, start)
-
-
-class NavigationGraph:
-    def __init__(self, walls, start):
-        self.walls = walls
-        self.build_graph(start)
-
-    def build_graph(self, start):
-        self.nodes = {}
-        frontier = [start]
-        explored = set([start])
-        while frontier:
-            pos = frontier.pop()
-            if pos not in self.nodes:
-                node = NavigationNode(pos)
-                self.nodes[pos] = node
-                (x, y) = pos
-                for (dx, dy) in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
-                    next_pos = (x + dx, y + dy)
-                    if self.has_immediate_path(pos, next_pos):
-                        if next_pos in self.nodes:
-                            self.nodes[next_pos].add_neighbor(node)
-                        elif next_pos not in explored:
-                            frontier.append(next_pos)
-                            explored.add(next_pos)
-
-    def has_immediate_path(self, pos1, pos2):
-        for wall in self.walls:
-            if wall.intersects(pos1, pos2):
-                return False
-        return True
-
-    def closest_node(self, pos):
-        # Just search through the nodes linearly since nodes won't necessarily be laid out in a
-        # grid. Could use a smarter algorithm in the future to prune the search space.
-        for node in self.nodes.values():
-            if node.contains(*pos):
-                return node
-        return None
-
-    def search(self, start_pos, target_pos):
-        start = self.closest_node(start_pos)
-        target = self.closest_node(target_pos)
-        if start and target:
-            return AStarSearch(start, target).search()
-        else:
-            return None
-
-
-class NavigationNode:
-    def __init__(self, pos):
-        self.x, self.y = pos
-        self.neighbors = []
-
-    def add_neighbor(self, neighbor):
-        self.neighbors.append(neighbor)
-        neighbor.neighbors.append(self)
-
-    # Euclidean distance, this provides a more direct-looking route and will
-    # generalize better in the future when we're not grid-based
-    def distance(self, other):
-        dx = self.x - other.x
-        dy = self.y - other.y
-        return math.sqrt(dx * dx + dy * dy)
-
-    def contains(self, x, y):
-        return x >= self.x - 0.5 and x <= self.x + 0.5 and y >= self.y - 0.5 and y <= self.y + 0.5
-
-    def draw(self, canvas):
-        canvas.create_rectangle(self.x - 0.5, self.y - 0.5,
-                                self.x + 0.5, self.y + 0.5,
-                                outline="gray")
-
-    def __hash__(self):
-        return hash((self.x, self.y))
-
-    def __repr__(self):
-        return "(%s, %s), neighbors: %s" % (self.x, self.y, [(n.x, n.y) for n in self.neighbors])
+        goal = tuple(obj['goal'])
+        return Level(name, walls, entities, start, goal)

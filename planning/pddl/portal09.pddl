@@ -23,8 +23,10 @@
     (connected button1 room3)
 
     (connector-connects door1 room3 room4)
+    (connector-connects door1 room4 room3)
     (door-requires door1 button1)
     (connector-connects grill1 room1 room3)
+    (connector-connects grill1 room3 room1)
 
     (can-create-portal-at room1 room1)
     (can-create-portal-at room2 room1)

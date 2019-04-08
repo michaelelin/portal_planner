@@ -38,7 +38,7 @@ class AStarSearch:
             if node.state == self.target:
                 return node.history()
             self.expand_node(node)
-        raise Exception('Path to target not found')
+        return None
 
     def explore_nodes(self):
         while self.frontier:
@@ -49,13 +49,14 @@ class AStarSearch:
                 yield node
 
     def expand_node(self, node):
-        for neighbor in node.state.neighbors:
-            path_cost = node.path_cost + node.state.distance(neighbor)
-            if self.can_explore(neighbor, path_cost):
-                # This might be a duplicate, but we can't easily change the
-                # existing node entry. Instead, add another to the priority queue (with lower
-                # priority) and ignore the old one if we run into it later.
-                self.push_node(neighbor, node, path_cost)
+        for neighbor, wall in node.state.neighbors:
+            if neighbor is not None:
+                path_cost = node.path_cost + node.state.distance(neighbor)
+                if self.can_explore(neighbor, path_cost):
+                    # This might be a duplicate, but we can't easily change the
+                    # existing node entry. Instead, add another to the priority queue (with lower
+                    # priority) and ignore the old one if we run into it later.
+                    self.push_node(neighbor, node, path_cost)
 
     def push_node(self, state, parent, path_cost):
         heapq.heappush(self.frontier, SearchNode(state, self.target, parent, path_cost))
