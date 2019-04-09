@@ -52,9 +52,11 @@ class Level:
         with open(filename) as f:
             obj = json.load(f)
         name = obj['name']
-        walls = sum((Wall.deserialize(wall) for wall in obj['walls']), []) # Concat the lists together
-        entities = ([Entity.deserialize(entity) for entity in obj['entities']]
+        entities = (sorted([Entity.deserialize(entity) for entity in obj['entities']],
+                           key=lambda e: e.ORDER)
                     if 'entities' in obj else [])
+        entities_dict = { e.name: e for e in entities }
+        walls = sum((Wall.deserialize(wall, entities_dict) for wall in obj['walls']), []) # Concat the lists together
         start = Position(*obj['start'])
         goal = Position(*obj['goal'])
         return Level(name, walls, entities, start, goal)

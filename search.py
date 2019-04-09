@@ -1,11 +1,11 @@
 import heapq
 
 class SearchNode:
-    def __init__(self, state, target, parent=None, path_cost=0):
+    def __init__(self, state, remaining_cost, parent=None, path_cost=0):
         self.state = state
         self.parent = parent
         self.path_cost = path_cost
-        self.heuristic = state.distance(target)
+        self.remaining_cost = remaining_cost
 
     # Returns the list of states used to get to this node
     def history(self):
@@ -17,25 +17,26 @@ class SearchNode:
             return []
 
     def __lt__(self, other):
-        return (self.path_cost + self.heuristic) < (other.path_cost + other.heuristic)
+        return (self.path_cost + self.remaining_cost) < (other.path_cost + other.remaining_cost)
 
     def __repr__(self):
         return 'SearchNode[%s]' % self.state
 
 class AStarSearch:
-    def __init__(self, start, target):
+    def __init__(self, start, goal_test, heuristic):
         self.frontier = []
         self.frontier_costs = {}
         self.explored = set()
         self.start = start
-        self.target = target
+        self.heuristic = heuristic
+        self.goal_test = goal_test
 
     def search(self):
-        heapq.heappush(self.frontier, SearchNode(self.start, self.target, self.start))
+        heapq.heappush(self.frontier, SearchNode(self.start, self.heuristic(self.start), self.start))
         self.frontier_costs[self.start] = 0
 
         for node in self.explore_nodes():
-            if node.state == self.target:
+            if self.goal_test(node.state):
                 return node.history()
             self.expand_node(node)
         return None
@@ -59,7 +60,7 @@ class AStarSearch:
                     self.push_node(neighbor, node, path_cost)
 
     def push_node(self, state, parent, path_cost):
-        heapq.heappush(self.frontier, SearchNode(state, self.target, parent, path_cost))
+        heapq.heappush(self.frontier, SearchNode(state, self.heuristic(state), parent, path_cost))
         self.frontier_costs[state] = path_cost
 
     def can_explore(self, state, path_cost):

@@ -1,7 +1,7 @@
 import requests
 import sexpdata
 
-from .actions import actions
+from .actions import actions, Pathfind
 
 class Planner:
     def __init__(self, problem):
@@ -22,4 +22,6 @@ class Planner:
             action_name = data[0].value()
             args = [self.problem.objects[arg.value()] for arg in data[1:]]
             parsed.append(actions[action_name](*args))
+        # Append a final path to the goal
+        parsed.append(Pathfind(self.problem.level.player, self.problem.level.goal))
         return parsed

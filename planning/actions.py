@@ -18,7 +18,7 @@ class Action:
         raise Exception('finished not implemented for %s' % self.__class__.__name__)
 
 # Sub-action that's useful for many others
-class Pathfinding(Action):
+class Pathfind(Action):
     EPSILON = 0.0001
     SPEED = 0.1
 
@@ -33,8 +33,8 @@ class Pathfinding(Action):
     def step(self):
         curr_node = self.path[self.index]
         next_node = self.path[self.index+1]
-        self.player.move_toward(next_node, Pathfinding.SPEED)
-        if self.player.distance_squared(next_node) < Pathfinding.EPSILON:
+        self.player.move_toward(next_node, Pathfind.SPEED)
+        if self.player.distance_squared(next_node) < Pathfind.EPSILON:
             self.index += 1
 
     def finished(self):
@@ -42,11 +42,33 @@ class Pathfinding(Action):
 
 
 
-class Move(Action):
+class Move(Pathfind):
     def __init__(self, player, from_loc, to_loc):
         self.player = player
         self.from_loc = from_loc
         self.to_loc = to_loc
+
+    def _begin(self):
+        if isinstance(self.from_loc, Button):
+            self.player.step_off(self.from_loc)
+
+        if isinstance(self.to_loc, Button):
+            self.path = self.level.navigation.search(self.player, self.to_loc)
+        elif isinstance(self.to_loc, Room):
+            room_center = self.to_loc.center()
+            self.path = self.level.navigation.search_multiple(
+                self.player,
+                goal_test=(lambda pos: pos.room == self.to_loc),
+                heuristic=(lambda pos: pos.distance(room_center))
+            )
+        self.index = 0
+
+    def step(self):
+        super().step()
+        if isinstance(self.to_loc, Button) and self.finished():
+            self.player.step_on(self.to_loc)
+
+
 
 class PickUp(Action):
     def __init__(self, player, obj, loc):
@@ -55,20 +77,31 @@ class PickUp(Action):
         self.loc = loc
 
     def _begin(self):
-        self.pathfinding = Pathfinding(self.player, self.obj)
+        self.pathfinding = Pathfind(self.player, self.obj)
         self.pathfinding.begin(self.level)
+        self._done = False
 
     def step(self):
-        self.pathfinding.step()
+        if self.pathfinding.finished():
+            self.player.pick_up(self.obj)
+            self._done = True
+        else:
+            self.pathfinding.step()
 
     def finished(self):
-        return self.pathfinding.finished()
+        return self._done
 
 class PutDown(Action):
     def __init__(self, player, obj, loc):
         self.player = player
         self.obj = obj
         self.loc = loc
+
+    def _begin(self):
+        self.player.put_down(self.obj)
+
+    def finished(self):
+        return True
 
 class EnterPortal(Action):
     def __init__(self, player, portal1, portal2, from_loc, to_loc):
@@ -79,7 +112,7 @@ class EnterPortal(Action):
         self.to_loc = to_loc
 
     def _begin(self):
-        self.pathfinding = Pathfinding(self.player, self.portal1)
+        self.pathfinding = Pathfind(self.player, self.portal1)
         self.pathfinding.begin(self.level)
         self._done = False
 
@@ -93,7 +126,7 @@ class EnterPortal(Action):
     def finished(self):
         return self._done
 
-class EnterDoor(Action):
+class EnterDoor(Move):
     def __init__(self, player, door, from_loc, to_loc):
         self.player = player
         self.door = door

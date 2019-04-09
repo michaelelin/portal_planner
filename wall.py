@@ -30,13 +30,19 @@ class Wall:
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
 
     @staticmethod
-    def deserialize(obj):
+    def deserialize(obj, entities):
         wall_type = obj.pop('type', 'wall')
         wall_cls = WALL_TYPES[wall_type]
 
         vertices = obj.pop('vertices')
 
+        wall_cls.translate_properties(obj, entities)
         return [wall_cls(tuple(pos1), tuple(pos2), **obj) for pos1, pos2 in zip(vertices, vertices[1:])]
+
+    @staticmethod
+    def translate_properties(props, entities):
+        pass
+
 
 class Door(Wall, planning.objects.Door):
     def __init__(self, pos1, pos2, triggers):
@@ -44,8 +50,19 @@ class Door(Wall, planning.objects.Door):
         planning.objects.Door.__init__(self)
         self.triggers = triggers
 
+    def is_open(self):
+        for trigger in self.triggers:
+            if not trigger.is_active():
+                return False
+        return True
+
     def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill="green")
+        if not self.is_open():
+            canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill="green")
+
+    @staticmethod
+    def translate_properties(props, entities):
+        props['triggers'] = [entities[t] for t in props['triggers']]
 
 class Grill(Wall, planning.objects.Grill):
     def __init__(self, pos1, pos2):

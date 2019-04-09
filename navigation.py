@@ -89,11 +89,18 @@ class NavigationGraph:
                 return node
         return None
 
+    def closest_nodes(self, pos):
+        for node in self.nodes.values():
+            if node.contains(pos):
+                yield node
+
     def search(self, start_pos, target_pos):
         start = self.closest_node(start_pos)
-        target = self.closest_node(target_pos)
-        if start and target:
-            path = AStarSearch(start, target).search()
+        targets = set(self.closest_nodes(target_pos))
+        if start and targets:
+            path = AStarSearch(start,
+                               goal_test=(lambda pos: pos in targets),
+                               heuristic=(lambda pos: pos.distance(target_pos))).search()
             if not path:
                 return None
 
@@ -101,6 +108,19 @@ class NavigationGraph:
                 path.insert(0, start_pos)
             if path[-1].x != target_pos.x or path[-1].x != target_pos.y:
                 path.append(target_pos)
+            return path
+        else:
+            return None
+
+    def search_multiple(self, start_pos, goal_test, heuristic):
+        start = self.closest_node(start_pos)
+        if start:
+            path = AStarSearch(start, goal_test, heuristic).search()
+            if not path:
+                return None
+
+            if path[0].x != start_pos.x or path[0].y != start_pos.y:
+                path.insert(0, start_pos)
             return path
         else:
             return None
@@ -140,3 +160,15 @@ class Room(planning.objects.Room):
 
     def add_node(self, node):
         self.nodes.append(node)
+
+    def center(self):
+        min_x = self.nodes[0].x
+        max_x = self.nodes[0].x
+        min_y = self.nodes[0].y
+        max_y = self.nodes[0].y
+        for node in self.nodes:
+            min_x = min(min_x, node.x)
+            max_x = max(max_x, node.x)
+            min_y = min(min_y, node.y)
+            max_y = max(max_y, node.y)
+        return Position((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)

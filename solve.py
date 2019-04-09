@@ -12,7 +12,6 @@ if __name__ == '__main__':
     level = Level.load(filename)
     problem = level.planning_problem()
     plan = problem.solve()
-    print(plan)
 
     view = LevelView(level, ActionSequence(level, plan))
     view.start()

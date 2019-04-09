@@ -43,7 +43,7 @@ class Problem:
         for obj in self.objects.values():
             if isinstance(obj, Door):
                 for trigger in obj.triggers:
-                    door_predicates.append(DoorRequires(obj, self.objects[trigger]))
+                    door_predicates.append(DoorRequires(obj, trigger))
         return door_predicates
 
     def initial_state(self):
