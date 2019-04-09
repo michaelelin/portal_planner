@@ -3,6 +3,7 @@ import math
 import planning.objects
 from search import AStarSearch
 from wall import *
+from geometry import Position
 
 PATH_NONE = 0
 PATH_TO = 1
@@ -37,9 +38,9 @@ class NavigationGraph:
         while frontier:
             pos = frontier.pop()
             if pos not in self.nodes:
-                node = NavigationNode(pos, room)
+                x, y = pos
+                node = NavigationNode(x + 0.5, y + 0.5, room)
                 self.nodes[pos] = node
-                (x, y) = pos
                 for i, (dx, dy) in enumerate([(1, 0), (0, 1), (-1, 0), (0, -1)]):
                     x_next = x + dx
                     y_next = y + dy
@@ -84,7 +85,7 @@ class NavigationGraph:
         # Just search through the nodes linearly since nodes won't necessarily be laid out in a
         # grid. Could use a smarter algorithm in the future to prune the search space.
         for node in self.nodes.values():
-            if node.contains(*pos):
+            if node.contains(pos):
                 return node
         return None
 
@@ -92,14 +93,22 @@ class NavigationGraph:
         start = self.closest_node(start_pos)
         target = self.closest_node(target_pos)
         if start and target:
-            return AStarSearch(start, target).search()
+            path = AStarSearch(start, target).search()
+            if not path:
+                return None
+
+            if path[0].x != start_pos.x or path[0].y != start_pos.y:
+                path.insert(0, start_pos)
+            if path[-1].x != target_pos.x or path[-1].x != target_pos.y:
+                path.append(target_pos)
+            return path
         else:
             return None
 
 
-class NavigationNode:
-    def __init__(self, pos, room):
-        self.x, self.y = pos
+class NavigationNode(Position):
+    def __init__(self, x, y, room):
+        super().__init__(x, y)
         self.room = room
         room.add_node(self)
         self.neighbors = [(None, None)] * 4 # East, North, West, South
@@ -107,19 +116,13 @@ class NavigationNode:
     def add_neighbor(self, direction, neighbor, wall):
         self.neighbors[direction] = (neighbor, wall)
 
-    # Euclidean distance, this provides a more direct-looking route and will
-    # generalize better in the future when we're not grid-based
-    def distance(self, other):
-        dx = self.x - other.x
-        dy = self.y - other.y
-        return math.sqrt(dx * dx + dy * dy)
-
-    def contains(self, x, y):
-        return x >= self.x and x <= self.x + 1 and y >= self.y and y <= self.y + 1
+    def contains(self, pos):
+        return (pos.x >= self.x - 0.5 and pos.x <= self.x + 0.5 and
+                pos.y >= self.y - 0.5 and pos.y <= self.y + 0.5)
 
     def draw(self, canvas):
-        canvas.create_rectangle(self.x, self.y,
-                                self.x + 1, self.y + 1,
+        canvas.create_rectangle(self.x - 0.5, self.y - 0.5,
+                                self.x + 0.5, self.y + 0.5,
                                 outline="gray")
 
     def __hash__(self):

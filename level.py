@@ -1,10 +1,11 @@
 import json
 import os
 
-from entity import Entity
+from entity import Entity, Player
 from navigation import NavigationGraph
 from wall import Wall
 from planning.problem import Problem
+from geometry import Position
 
 class Level:
     def __init__(self, name, walls, entities, start, goal):
@@ -12,6 +13,7 @@ class Level:
         self.walls = walls
         self.entities = entities
         self.start = start
+        self.player = Player(start.x, start.y)
         self.goal = goal
         self._navigation = None
 
@@ -25,8 +27,10 @@ class Level:
         return Problem(self)
 
     def bounds(self):
-        (x_min, y_min) = self.start
-        (x_max, y_max) = self.start
+        x_min = self.start.x
+        x_max = self.start.x
+        y_min = self.start.y
+        y_max = self.start.y
         for wall in self.walls:
             x_min = min(x_min, wall.x1, wall.x2)
             y_min = min(y_min, wall.y1, wall.y2)
@@ -41,9 +45,7 @@ class Level:
             wall.draw(canvas)
         for entity in self.entities:
             entity.draw(canvas)
-
-        start_x, start_y = self.start
-        canvas.create_oval(start_x - 0.3, start_y - 0.3, start_x + 0.3, start_y + 0.3, fill='red')
+        self.player.draw(canvas)
 
     @staticmethod
     def load(filename):
@@ -53,6 +55,6 @@ class Level:
         walls = sum((Wall.deserialize(wall) for wall in obj['walls']), []) # Concat the lists together
         entities = ([Entity.deserialize(entity) for entity in obj['entities']]
                     if 'entities' in obj else [])
-        start = tuple(obj['start'])
-        goal = tuple(obj['goal'])
+        start = Position(*obj['start'])
+        goal = Position(*obj['goal'])
         return Level(name, walls, entities, start, goal)

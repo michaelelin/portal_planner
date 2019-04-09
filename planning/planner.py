@@ -1,4 +1,7 @@
 import requests
+import sexpdata
+
+from .actions import actions
 
 class Planner:
     def __init__(self, problem):
@@ -7,6 +10,16 @@ class Planner:
             self.domain = domain_file.read()
 
     def plan(self):
-        data = { 'domain': self.domain, 'problem': self.problem.serialize() }
+        problem_str = sexpdata.dumps(self.problem.serialize(), str_as='symbol')
+        data = { 'domain': self.domain, 'problem': problem_str }
         r = requests.post('http://solver.planning.domains/solve', data=data)
-        return [action['name'] for action in r.json()['result']['plan']]
+        return self.parse_actions(r.json()['result']['plan'])
+
+    def parse_actions(self, action_data):
+        parsed = []
+        for action in action_data:
+            data = sexpdata.loads(action['name'])
+            action_name = data[0].value()
+            args = [self.problem.objects[arg.value()] for arg in data[1:]]
+            parsed.append(actions[action_name](*args))
+        return parsed

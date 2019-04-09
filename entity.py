@@ -1,24 +1,28 @@
 import geometry
+from geometry import Position
 import planning.objects
 
-class Entity:
+class Drawable:
     def draw(self, canvas):
         pass
 
+class Player(planning.objects.Player, Drawable):
+    def draw(self, canvas):
+        self._id = canvas.create_oval(self.x - 0.3, self.y - 0.3,
+                                      self.x + 0.3, self.y + 0.3, fill='red')
+
+class Entity(Drawable):
     @staticmethod
     def deserialize(obj):
         return ENTITY_TYPES[obj['type']].deserialize(obj)
 
-
 class Portal(Entity, planning.objects.Portal):
     def __init__(self, pos1, pos2, name):
-        planning.objects.Portal.__init__(self, name)
         self.pos1 = pos1
         self.pos2 = pos2
 
         x1, y1, x2, y2 = geometry.offset_line(*self.pos1, *self.pos2, -0.1)
-        self.x = (x1 + x2) * 0.5
-        self.y = (y1 + y2) * 0.5
+        planning.objects.Portal.__init__(self, (x1 + x2) * 0.5, (y1 + y2) * 0.5, name)
 
     def draw(self, canvas):
         x1, y1 = self.pos1
@@ -44,30 +48,24 @@ class Portal2(Portal):
     COLOR = 'blue'
 
 class Cube(Entity, planning.objects.Cube):
-    def __init__(self, pos):
-        planning.objects.Cube.__init__(self)
-        self.x, self.y = pos
-
     def draw(self, canvas):
         canvas.create_rectangle(self.x - 0.3, self.y - 0.3, self.x + 0.3, self.y + 0.3, fill='black')
 
     @staticmethod
     def deserialize(obj):
-        pos = tuple(obj['pos'])
-        return Cube(pos)
+        return Cube(*obj['pos'])
 
-class Button(planning.objects.Button):
-    def __init__(self, pos):
-        super().__init__()
-        self.x, self.y = pos
+class Button(planning.objects.Button, Position):
+    def __init__(self, x, y):
+        planning.objects.Button.__init__(self)
+        Position.__init__(self, x, y)
 
     def draw(self, canvas):
         canvas.create_oval(self.x - 0.8, self.y - 0.8, self.x + 0.8, self.y + 0.8, fill='red')
 
     @staticmethod
     def deserialize(obj):
-        pos = tuple(obj['pos'])
-        return Button(pos)
+        return Button(*obj['pos'])
 
 ENTITY_TYPES = {
     'portal1': Portal1,

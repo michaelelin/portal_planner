@@ -2,7 +2,10 @@ import functools
 import sys
 import tkinter as tk
 
+from geometry import Position
 from level import Level
+
+FRAME_RATE = 60
 
 class LevelCanvas(tk.Canvas):
     def __init__(self, app, level, width=400, height=400):
@@ -16,7 +19,7 @@ class LevelCanvas(tk.Canvas):
         self.path_lines = []
 
     def _calculate_transform(self):
-        (x_min, y_min, x_max, y_max) = level.bounds()
+        (x_min, y_min, x_max, y_max) = self.level.bounds()
         center_x = (x_min + x_max) * 0.5
         center_y = (y_min + y_max) * 0.5
 
@@ -55,12 +58,11 @@ class LevelCanvas(tk.Canvas):
 
     def handle_click(self, event):
         path = self.level.navigation.search(self.level.start,
-                                              self.preimage_point((event.x, event.y)))
+                                            Position(*self.preimage_point((event.x, event.y))))
         if path is not None:
             for line_id in self.path_lines:
                 self.delete(line_id)
-            self.path_lines = [self.create_line(node1.x + 0.5, node1.y + 0.5,
-                                                node2.x + 0.5, node2.y + 0.5)
+            self.path_lines = [self.create_line(node1.x, node1.y, node2.x, node2.y)
                                for node1, node2 in zip(path, path[1:])]
 
 class Transform:
@@ -91,16 +93,32 @@ class Dilate(Transform):
         return Dilate(1.0 / self.scale)
 
 
+class LevelView:
+    def __init__(self, level, sequence=None, width=800, height=400):
+        self.level = level
+        self.sequence = sequence
+        self.root = tk.Tk()
+        self.app = tk.Frame(self.root)
+        self.canvas = LevelCanvas(self.app, self.level, width=width, height=height)
+        self.canvas.pack()
+        self.app.pack()
+
+    def start(self):
+        if self.sequence:
+            self.root.after(int(1000 / FRAME_RATE), self.step)
+
+        self.level.draw(self.canvas)
+        self.root.mainloop()
+
+    def step(self):
+        self.sequence.step()
+        self.canvas.delete('all')
+        self.level.draw(self.canvas)
+        self.root.after(int(1000 / FRAME_RATE), self.step)
+
+
 if __name__ == '__main__':
     filename = sys.argv[1]
     level = Level.load(filename)
 
-    root = tk.Tk()
-    app = tk.Frame(root)
-    canvas = LevelCanvas(app, level, width=800, height=400)
-    canvas.pack()
-
-    level.draw(canvas)
-
-    app.pack()
-    root.mainloop()
+    LevelView(level).start()

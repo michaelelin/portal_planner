@@ -1,5 +1,3 @@
-import sexpdata
-
 from .predicates import *
 from .objects import *
 from .planner import Planner
@@ -7,7 +5,7 @@ from .planner import Planner
 class Problem:
     def __init__(self, level):
         self.level = level
-        self.player = Player(level.start)
+        self.player = level.player
         self.void = Void('portal-void')
         self.objects = self._objects()
 
@@ -34,7 +32,7 @@ class Problem:
 
         for obj in self.objects.values():
             if isinstance(obj, Button):
-                loc = self.level.navigation.closest_node((obj.x, obj.y)).room
+                loc = self.level.navigation.closest_node(obj).room
                 connection_predicates.add(Connected(obj, loc))
                 connection_predicates.add(Connected(loc, obj))
 
@@ -61,12 +59,11 @@ class Problem:
                       [':objects'])
         init = [':init'] + [pred.serialize() for pred in self.initial_state()]
         goal = [':goal', self.goal_state().serialize()]
-        return sexpdata.dumps(['define', ['problem', self.level.name],
-                               [':domain', 'portal'],
-                               objects,
-                               init,
-                               goal],
-                              str_as='symbol')
+        return ['define', ['problem', self.level.name],
+                [':domain', 'portal'],
+                objects,
+                init,
+                goal]
 
     def solve(self):
         return Planner(self).plan()
