@@ -50,10 +50,14 @@ class Entity(Drawable):
         return ENTITY_TYPES[obj['type']].deserialize(obj)
 
 class Portal(Entity, planning.objects.Portal):
-    ORDER = 0
+    ORDER = 3
+    SPEED = 0.2
+    EPSILON = 0.01
+    PROJECTILE_SIZE = 1
     def __init__(self, pos1, pos2, name):
         planning.objects.Object.__init__(self, name)
         self.set_endpoints(pos1, pos2)
+        self.target = None
 
     def reset(self):
         self.set_endpoints(None, None)
@@ -63,13 +67,27 @@ class Portal(Entity, planning.objects.Portal):
         self.pos2 = pos2
         if pos1 and pos2:
             x1, y1, x2, y2 = geometry.offset_line(*self.pos1, *self.pos2, -0.1)
-            Position.__init__(self, (x1 + x2) * 0.5, (y1 + y2) * 0.5)
+            self.x = (x1 + x2) * 0.5
+            self.y = (y1 + y2) * 0.5
+        else:
+            self.x = None
+            self.y = None
+        self.target = None
 
     def draw(self, canvas):
         if self.pos1 and self.pos2:
             x1, y1 = self.pos1
             x2, y2 = self.pos2
-            canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1), width=3.0, fill=self.__class__.COLOR)
+            canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1), width=3.0, fill=self.COLOR)
+        elif self.x is not None and self.y is not None and self.target:
+            distance = self.distance(self.target)
+            dx = (self.target.x - self.x) * (self.PROJECTILE_SIZE / distance)
+            dy = (self.target.y - self.y) * (self.PROJECTILE_SIZE / distance)
+            canvas.create_line(self.x - dx, self.y - dy, self.x, self.y, width=3.0, fill=self.COLOR)
+
+    def move_toward(self, target, speed):
+        super().move_toward(target, speed)
+        self.target = target
 
     def get_location(self, level):
         if self.pos1 and self.pos2:
@@ -96,16 +114,14 @@ class Portal(Entity, planning.objects.Portal):
             return cls(None, None)
 
 class Portal1(Portal):
+    COLOR = 'orange'
     def __init__(self, pos1, pos2):
         super().__init__(pos1, pos2, "portal1")
 
-    COLOR = 'orange'
-
 class Portal2(Portal):
+    COLOR = 'dodger blue'
     def __init__(self, pos1, pos2):
         super().__init__(pos1, pos2, "portal2")
-
-    COLOR = 'blue'
 
 class Cube(Entity, planning.objects.Cube):
     ORDER = 2

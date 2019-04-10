@@ -1,4 +1,5 @@
 from .objects import *
+import entity
 
 class Action:
     begun = False
@@ -148,24 +149,32 @@ class CreatePortal(Action):
             goal_test=(lambda pos: pos.room == self.player_loc and pos.visible_rooms[self.portal_to]),
             heuristic=(lambda pos: pos.distance(portal_to_center))
         )
+        self.wall_segment = self.path[-1].visible_rooms[self.portal_to][0]
         self.index = 0
+        self.stage = 0
         self._done = False
 
     def step(self):
-        if self.index < len(self.path) - 1:
-            curr_node = self.path[self.index]
-            next_node = self.path[self.index+1]
-            self.player.move_toward(next_node, Pathfind.SPEED)
-            if self.player.distance_squared(next_node) < Pathfind.EPSILON:
-                self.index += 1
+        if self.stage == 0:
+            if self.index < len(self.path) - 1:
+                curr_node = self.path[self.index]
+                next_node = self.path[self.index+1]
+                self.player.move_toward(next_node, Pathfind.SPEED)
+                if self.player.distance_squared(next_node) < Pathfind.EPSILON:
+                    self.index += 1
 
-        else:
-            wall_segment = self.path[-1].visible_rooms[self.portal_to][0]
-            self.portal.create_on(wall_segment, self.player)
-            self._done = True
+            else:
+                self.portal.reset()
+                self.portal.move_to(self.player)
+                self.stage = 1
+        elif self.stage == 1:
+            self.portal.move_toward(self.wall_segment.center(), entity.Portal.SPEED)
+            if self.portal.distance_squared(self.wall_segment.center()) < entity.Portal.EPSILON:
+                self.portal.create_on(self.wall_segment, self.player)
+                self.stage = 2
 
     def finished(self):
-        return self._done
+        return self.stage == 2
 
 class EnterGrill(Move):
     def __init__(self, player, grill, from_loc, to_loc, *args):

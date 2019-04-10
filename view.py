@@ -106,7 +106,7 @@ class Dilate(Transform):
 
 
 class LevelView:
-    def __init__(self, level, sequence=None, width=800, height=400):
+    def __init__(self, level, sequence=None, width=800, height=600):
         self.level = level
         self.sequence = sequence
         self.root = tk.Tk()
