@@ -13,5 +13,6 @@ if __name__ == '__main__':
     problem = level.planning_problem()
     plan = problem.solve()
 
-    view = LevelView(level, ActionSequence(level, plan))
+    view = LevelView(level, ActionSequence(level, plan),
+                     width=800, height=580)
     view.start()

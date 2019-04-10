@@ -41,6 +41,9 @@ class Level:
         return (x_min, y_min, x_max, y_max)
 
     def draw(self, canvas):
+        canvas.create_text(10, 10, text=self.name,
+                           anchor='nw',
+                           font=('Arial', 20, 'bold'))
         for node in self.navigation.nodes.values():
             node.draw(canvas)
         for wall in self.walls:

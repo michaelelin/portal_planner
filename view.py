@@ -1,6 +1,7 @@
 import functools
 import sys
 import tkinter as tk
+from tkinter import ttk
 
 from geometry import Position
 from level import Level
@@ -112,22 +113,28 @@ class LevelView:
         self.root = tk.Tk()
         self.app = tk.Frame(self.root)
         self.canvas = LevelCanvas(self.app, self.level, width=width, height=height)
-        self.canvas.pack()
+        self.canvas.pack(side='top', fill=tk.BOTH, expand=1)
+
+        if self.sequence:
+            self.controls = tk.Frame(self.app)
+            self.controls.pack(side='bottom')
+            self.btn_play = ttk.Button(self.controls, text='Play', command=self.play)
+            self.btn_play.pack()
+
         self.app.pack()
 
     def start(self):
-        if self.sequence:
-            self.root.after(int(1000 / FRAME_RATE), self.step)
-
         self.level.draw(self.canvas)
         self.root.mainloop()
+
+    def play(self):
+        self.root.after(int(1000 / FRAME_RATE), self.step)
 
     def step(self):
         self.sequence.step()
         self.canvas.delete('all')
         self.level.draw(self.canvas)
         self.root.after(int(1000 / FRAME_RATE), self.step)
-
 
 if __name__ == '__main__':
     filename = sys.argv[1]
