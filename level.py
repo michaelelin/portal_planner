@@ -3,18 +3,20 @@ import os
 
 from entity import Entity, Player
 from navigation import NavigationGraph
-from wall import Wall
+from wall import Segment
 from planning.problem import Problem
 from geometry import Position
 
 class Level:
-    def __init__(self, name, walls, entities, start, goal):
+    def __init__(self, name, walls, entities, start, goal, capabilities):
         self.name = name
         self.walls = walls
         self.entities = entities
+        self.entities_dict = { e.name: e for e in entities }
         self.start = start
         self.player = Player(start.x, start.y)
         self.goal = goal
+        self.capabilities = capabilities
         self._navigation = None
 
     @property
@@ -56,7 +58,8 @@ class Level:
                            key=lambda e: e.ORDER)
                     if 'entities' in obj else [])
         entities_dict = { e.name: e for e in entities }
-        walls = sum((Wall.deserialize(wall, entities_dict) for wall in obj['walls']), []) # Concat the lists together
+        walls = sum((Segment.deserialize(wall, entities_dict) for wall in obj['walls']), []) # Concat the lists together
         start = Position(*obj['start'])
         goal = Position(*obj['goal'])
-        return Level(name, walls, entities, start, goal)
+        capabilities = obj['capabilities']
+        return Level(name, walls, entities, start, goal, capabilities)

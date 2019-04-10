@@ -6,7 +6,7 @@ class Problem:
     def __init__(self, level):
         self.level = level
         self.player = level.player
-        self.void = Void('portal-void')
+        self.void = PORTAL_VOID
         self.objects = self._objects()
 
     def _objects(self):
@@ -16,6 +16,17 @@ class Problem:
                   + [w for w in self.level.walls if isinstance(w, Object)])
         return { obj.name: obj for obj in objects }
 
+    def capability_predicates(self):
+        capability_predicates = []
+        for capability in self.level.capabilities:
+            if capability == 'portal1':
+                capability_predicates.append(CanCreatePortal(self.player, self.objects['portal1']))
+            elif capability == 'portal2':
+                capability_predicates.append(CanCreatePortal(self.player, self.objects['portal2']))
+            else:
+                raise Exception('Bad capability %s' % capability)
+        return capability_predicates
+
     def location_predicates(self):
         return [At(obj, obj.get_location(self.level)) for obj in self.objects.values()
                 if isinstance(obj, Entity)]
@@ -23,7 +34,7 @@ class Problem:
     def connection_predicates(self):
         connection_predicates = set()
         for node in self.level.navigation.nodes.values():
-            for neighbor, wall in node.neighbors:
+            for neighbor, wall, _ in node.neighbors:
                 if neighbor and neighbor.room != node.room:
                     if isinstance(wall, Connector):
                         connection_predicates.add(ConnectorConnects(wall, node.room, neighbor.room))
@@ -46,10 +57,21 @@ class Problem:
                     door_predicates.append(DoorRequires(obj, trigger))
         return door_predicates
 
+    def visibility_predicates(self):
+        visibility_predicates = set()
+        for room in self.level.navigation.rooms:
+            for node in room.nodes:
+                for other_room in self.level.navigation.rooms:
+                    if node.visible_rooms[other_room]:
+                        visibility_predicates.add(CanCreatePortalAt(room, other_room))
+        return list(visibility_predicates)
+
     def initial_state(self):
-        return (self.location_predicates()
+        return (self.capability_predicates()
+                + self.location_predicates()
                 + self.connection_predicates()
-                + self.door_predicates())
+                + self.door_predicates()
+                + self.visibility_predicates())
 
     def goal_state(self):
         return At(self.player, self.level.navigation.closest_node(self.level.goal).room)

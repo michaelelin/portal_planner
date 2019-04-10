@@ -52,22 +52,48 @@ class Entity(Drawable):
 class Portal(Entity, planning.objects.Portal):
     ORDER = 0
     def __init__(self, pos1, pos2, name):
+        planning.objects.Object.__init__(self, name)
+        self.set_endpoints(pos1, pos2)
+
+    def reset(self):
+        self.set_endpoints(None, None)
+
+    def set_endpoints(self, pos1, pos2):
         self.pos1 = pos1
         self.pos2 = pos2
-
-        x1, y1, x2, y2 = geometry.offset_line(*self.pos1, *self.pos2, -0.1)
-        planning.objects.Portal.__init__(self, (x1 + x2) * 0.5, (y1 + y2) * 0.5, name)
+        if pos1 and pos2:
+            x1, y1, x2, y2 = geometry.offset_line(*self.pos1, *self.pos2, -0.1)
+            Position.__init__(self, (x1 + x2) * 0.5, (y1 + y2) * 0.5)
 
     def draw(self, canvas):
-        x1, y1 = self.pos1
-        x2, y2 = self.pos2
-        canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1), width=3.0, fill=self.__class__.COLOR)
+        if self.pos1 and self.pos2:
+            x1, y1 = self.pos1
+            x2, y2 = self.pos2
+            canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1), width=3.0, fill=self.__class__.COLOR)
+
+    def get_location(self, level):
+        if self.pos1 and self.pos2:
+            return super().get_location(level)
+        else:
+            return planning.objects.PORTAL_VOID
+
+    def create_on(self, segment, origin):
+        intersection = segment.intersects(origin, segment.center())
+        if intersection > 0:
+            self.set_endpoints((segment.x2, segment.y2),
+                               (segment.x1, segment.y1))
+        else:
+            self.set_endpoints((segment.x1, segment.y1),
+                               (segment.x2, segment.y2))
 
     @classmethod
     def deserialize(cls, obj):
-        pos1 = tuple(obj['pos1'])
-        pos2 = tuple(obj['pos2'])
-        return cls(pos1, pos2)
+        pos1 = obj.get('pos1')
+        pos2 = obj.get('pos2')
+        if pos1 and pos2:
+            return cls(tuple(pos1), tuple(pos2))
+        else:
+            return cls(None, None)
 
 class Portal1(Portal):
     def __init__(self, pos1, pos2):

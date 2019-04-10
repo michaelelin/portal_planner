@@ -1,33 +1,43 @@
 import tkinter as tk
 
+from geometry import Position
 import geometry
 import planning.objects
 
-class Wall:
-    def __init__(self, pos1, pos2):
+class Segment:
+    def __init__(self, pos1, pos2, parent=None):
         self.x1, self.y1 = pos1
         self.x2, self.y2 = pos2
+        self.parent = parent
+        self.x_min = min(self.x1, self.x2)
+        self.x_max = max(self.x1, self.x2)
+        self.y_min = min(self.y1, self.y2)
+        self.y_max = max(self.y1, self.y2)
+
+    def center(self):
+        return Position((self.x1 + self.x2) * 0.5, (self.y1 + self.y2) * 0.5)
 
     # https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
     # Returns: 0 if no intersection
     #          1 if positive intersection
     #         -1 if negative intersection
     def intersects(self, pos1, pos2):
-        x3, y3 = pos1
-        x4, y4 = pos2
-        det = ((self.x1 - self.x2) * (y3 - y4)) - ((self.y1 - self.y2) * (x3 - x4))
+        if ((pos1.x < self.x_min and pos2.x < self.x_min)
+                or (pos1.x > self.x_max and pos2.x > self.x_max)
+                or (pos1.y < self.y_min and pos2.y < self.y_min)
+                or (pos1.y > self.y_max and pos2.y > self.y_max)):
+            return 0
+
+        det = ((self.x1 - self.x2) * (pos1.y - pos2.y)) - ((self.y1 - self.y2) * (pos1.x - pos2.x))
         if det != 0:
-            t = float(((self.x1 - x3) * (y3 - y4)) - ((self.y1 - y3) * (x3 - x4))) / det
-            u = float(((self.x1 - self.x2) * (self.y1 - y3)) - ((self.y1 - self.y2) * (self.x1 - x3))) / -det
+            t = float(((self.x1 - pos1.x) * (pos1.y - pos2.y)) - ((self.y1 - pos1.y) * (pos1.x - pos2.x))) / det
+            u = float(((self.x1 - self.x2) * (self.y1 - pos1.y)) - ((self.y1 - self.y2) * (self.x1 - pos1.x))) / -det
             if 0.0 <= t and t <= 1.0 and 0.0 <= u and u <= 1.0:
                 if det > 0:
                     return 1
                 else:
                     return -1
         return 0
-
-    def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
 
     @staticmethod
     def deserialize(obj, entities):
@@ -43,10 +53,28 @@ class Wall:
     def translate_properties(props, entities):
         pass
 
+class Wall(Segment):
+    def __init__(self, pos1, pos2):
+        super().__init__(pos1, pos2)
+        self._segment()
 
-class Door(Wall, planning.objects.Door):
+    def _segment(self):
+        num_segments = round(Position(self.x1, self.y1).distance(Position(self.x2, self.y2)))
+        self.segments = []
+        for i in range(num_segments):
+            self.segments.append(Segment((self.x1 + (self.x2 - self.x1) * (i / num_segments),
+                                          self.y1 + (self.y2 - self.y1) * (i / num_segments)),
+                                         (self.x1 + (self.x2 - self.x1) * ((i+1) / num_segments),
+                                          self.y1 + (self.y2 - self.y1) * ((i+1) / num_segments)),
+                                         self))
+
+    def draw(self, canvas):
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
+
+
+class Door(Segment, planning.objects.Door):
     def __init__(self, pos1, pos2, triggers):
-        Wall.__init__(self, pos1, pos2)
+        Segment.__init__(self, pos1, pos2)
         planning.objects.Door.__init__(self)
         self.triggers = triggers
 
@@ -64,17 +92,17 @@ class Door(Wall, planning.objects.Door):
     def translate_properties(props, entities):
         props['triggers'] = [entities[t] for t in props['triggers']]
 
-class Grill(Wall, planning.objects.Grill):
+class Grill(Segment, planning.objects.Grill):
     def __init__(self, pos1, pos2):
-        Wall.__init__(self, pos1, pos2)
+        Segment.__init__(self, pos1, pos2)
         planning.objects.Grill.__init__(self)
 
     def draw(self, canvas):
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, fill="light blue")
 
-class Ledge(Wall):
+class Ledge(Segment):
     def draw(self, canvas):
-        super().draw(canvas)
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
         canvas.create_line(*geometry.offset_line(self.x1, self.y1, self.x2, self.y2, -0.2),
                            width=1.0,
                            dash=(4, 4))

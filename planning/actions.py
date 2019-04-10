@@ -133,10 +133,71 @@ class EnterDoor(Move):
         self.from_loc = from_loc
         self.to_loc = to_loc
 
+class CreatePortal(Action):
+    def __init__(self, player, portal, player_loc, portal_from, portal_to):
+        self.player = player
+        self.portal = portal
+        self.player_loc = player_loc
+        self.portal_from = portal_from
+        self.portal_to = portal_to
+
+    def _begin(self):
+        portal_to_center = self.portal_to.center()
+        self.path = self.level.navigation.search_multiple(
+            self.player,
+            goal_test=(lambda pos: pos.room == self.player_loc and pos.visible_rooms[self.portal_to]),
+            heuristic=(lambda pos: pos.distance(portal_to_center))
+        )
+        self.index = 0
+        self._done = False
+
+    def step(self):
+        if self.index < len(self.path) - 1:
+            curr_node = self.path[self.index]
+            next_node = self.path[self.index+1]
+            self.player.move_toward(next_node, Pathfind.SPEED)
+            if self.player.distance_squared(next_node) < Pathfind.EPSILON:
+                self.index += 1
+
+        else:
+            wall_segment = self.path[-1].visible_rooms[self.portal_to][0]
+            self.portal.create_on(wall_segment, self.player)
+            self._done = True
+
+    def finished(self):
+        return self._done
+
+class EnterGrill(Move):
+    def __init__(self, player, grill, from_loc, to_loc, *args):
+        self.player = player
+        self.grill = grill
+        self.from_loc = from_loc
+        self.to_loc = to_loc
+
+    def step(self):
+        prev_pos = Position(*self.player.pos())
+        super().step()
+        curr_pos = Position(*self.player.pos())
+        if self.grill.intersects(prev_pos, curr_pos):
+            self._reset_portals()
+
+    def _reset_portals(self):
+        print('Resetting')
+        for cap in self.level.capabilities:
+            if cap == 'portal1':
+                self.level.entities_dict['portal1'].reset()
+            elif cap == 'portal2':
+                self.level.entities_dict['portal2'].reset()
+
+
 actions = {
     'move': Move,
     'pick-up': PickUp,
     'put-down': PutDown,
     'enter-portal': EnterPortal,
     'enter-door': EnterDoor,
+    'create-portal': CreatePortal,
+    'enter-grill0': EnterGrill,
+    'enter-grill1': EnterGrill,
+    'enter-grill2': EnterGrill,
 }

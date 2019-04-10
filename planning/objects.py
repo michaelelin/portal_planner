@@ -17,9 +17,6 @@ class Object:
     def __hash__(self):
         return hash(self.name)
 
-    def __eq__(self, other):
-        return self.name == other.name
-
 class Location(Object):
     pass
 
@@ -27,9 +24,6 @@ class Entity(Object, Position):
     def __init__(self, x, y, name=None):
         Position.__init__(self, x, y)
         Object.__init__(self, name)
-
-    def get_location(self, level):
-        raise Exception('get_location not implemented for %s' % self)
 
     def get_location(self, level):
         return level.navigation.closest_node(self).room
@@ -66,3 +60,5 @@ class Item(Movable):
 
 class Cube(Item):
     pass
+
+PORTAL_VOID = Void('portal-void')

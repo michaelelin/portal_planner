@@ -57,13 +57,25 @@ class LevelCanvas(tk.Canvas):
         return super().create_oval(x1_new, y1_new, x2_new, y2_new, **options)
 
     def handle_click(self, event):
-        path = self.level.navigation.search(self.level.start,
-                                            Position(*self.preimage_point((event.x, event.y))))
-        if path is not None:
-            for line_id in self.path_lines:
-                self.delete(line_id)
-            self.path_lines = [self.create_line(node1.x, node1.y, node2.x, node2.y)
-                               for node1, node2 in zip(path, path[1:])]
+        node = self.level.navigation.closest_node(Position(*self.preimage_point((event.x,
+                                                                                 event.y))))
+
+        for line_id in self.path_lines:
+            self.delete(line_id)
+        self.path_lines = []
+        for room, segments in node.visible_rooms.items():
+            for segment in segments:
+                self.path_lines.append(self.create_line(segment.x1, segment.y1, segment.x2,
+                                                        segment.y2, fill='red'))
+
+
+        # path = self.level.navigation.search(self.level.player,
+        #                                     Position(*self.preimage_point((event.x, event.y))))
+        # if path is not None:
+        #     for line_id in self.path_lines:
+        #         self.delete(line_id)
+        #     self.path_lines = [self.create_line(node1.x, node1.y, node2.x, node2.y)
+        #                        for node1, node2 in zip(path, path[1:])]
 
 class Transform:
     def apply(self, pos):

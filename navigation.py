@@ -25,12 +25,20 @@ class NavigationGraph:
         y_min = math.floor(y_min) - 1
         x_max = math.ceil(x_max)
         y_max = math.ceil(y_max)
+
+        self.fill_nodes((x_min, y_min), Room(), (x_min, y_min, x_max, y_max))
+        outside = self.nodes
+        self.nodes = {}
+
         for y in range(y_min, y_max):
             for x in range(x_min, x_max):
-                if (x, y) not in self.nodes:
+                if (x, y) not in self.nodes and (x, y) not in outside:
                     room = Room()
                     self.fill_nodes((x, y), room, (x_min, y_min, x_max, y_max))
                     self.rooms.append(room)
+        for room in self.rooms:
+            room.determine_walls()
+        self.add_visibility()
 
     def fill_nodes(self, start, room, bounds):
         x_min, y_min, x_max, y_max = bounds
@@ -48,38 +56,69 @@ class NavigationGraph:
                     if x_next < x_min or x_next > x_max or y_next < y_min or y_next > y_max:
                         continue
 
-                    path_type, wall = self.immediate_path_type(pos, next_pos)
-                    # If we've already explored this node, add the appropriate connections.
-                    # If not, then if there's no wall between the two nodes, add it to our frontier.
-                    # If there is a wall, leave it to be discovered (and potentially connected)
-                    # later.
-                    if next_pos in self.nodes:
-                        next_node = self.nodes[next_pos]
-                        if path_type in (PATH_BOTH, PATH_DOOR, PATH_GRILL):
-                            node.add_neighbor(i, next_node, wall)
-                            next_node.add_neighbor((i + 2) % 4, node, wall) # The opposite direction
-                        elif path_type == PATH_TO:
-                            node.add_neighbor(i, next_node, wall)
-                        elif path_type == PATH_FROM:
-                            next_node.add_neighbor((i + 2) % 4, node, wall)
-                    elif path_type == PATH_BOTH:
+                    if not self.add_neighbor(node, i, pos, next_pos):
                         frontier.append(next_pos)
 
-    def immediate_path_type(self, pos1, pos2):
+    # Returns true if we've done everything we can right now, false if the next pos needs to be
+    # added to the frontier
+    def add_neighbor(self, node, direction, pos, next_pos):
+        next_node = self.nodes.get(next_pos)
         for wall in self.level.walls:
-            x1, y1 = pos1
-            x2, y2 = pos2
-            intersection = wall.intersects((x1 + 0.5, y1 + 0.5), (x2 + 0.5, y2 + 0.5))
+            x1, y1 = pos
+            x2, y2 = next_pos
+            intersection = wall.intersects(Position(x1 + 0.5, y1 + 0.5), Position(x2 + 0.5, y2 + 0.5))
+            # If we've already explored this node, add the appropriate connections.
+            # If not, then if there's no wall between the two nodes, add it to our frontier.
+            # If there is a wall, leave it to be discovered (and potentially connected)
+            # later.
             if intersection:
-                if isinstance(wall, Door):
-                    return PATH_DOOR, wall
-                elif isinstance(wall, Grill):
-                    return PATH_GRILL, wall
-                elif isinstance(wall, Ledge):
-                    return (PATH_TO if intersection > 0 else PATH_FROM), wall
-                else:
-                    return PATH_NONE, wall
-        return PATH_BOTH, None
+                # Need special handling so we can determine which segments to create portals on
+                if isinstance(wall, Wall):
+                    for segment in wall.segments:
+                        if segment.intersects(Position(x1 + 0.5, y1 + 0.5),
+                                              Position(x2 + 0.5, y2 + 0.5)):
+                            node.add_neighbor(direction, None, segment, intersection)
+                elif next_node:
+                    if isinstance(wall, Door) or isinstance(wall, Grill):
+                        path_from = True
+                        path_to = True
+                    elif isinstance(wall, Ledge) and intersection > 0:
+                        path_from = True
+                        path_to = False
+                    elif isinstance(wall, Ledge) and intersection < 0:
+                        path_from = False
+                        path_to = True
+
+                    node.add_neighbor(direction, (next_node if path_from else None), wall, intersection)
+                    next_node.add_neighbor((direction + 2) % 4, (node if path_to else None), wall, -intersection)
+                return True
+
+        # No wall intersection
+        if next_node:
+            node.add_neighbor(direction, next_node, None, 0)
+            next_node.add_neighbor((direction + 2) % 4, node, None, 0)
+            return True
+        else:
+            return False
+
+    # This is a stupid number of nested loops, I'm sure we could do something more clever
+    def add_visibility(self):
+        for node in self.nodes.values():
+            for room in self.rooms:
+                visible_segments = []
+                for segment, direction in room.wall_segments:
+                    # Check if we're coming at the wall from the right direction
+                    if segment.intersects(node, segment.center()) == direction:
+                        if self.is_segment_visible(segment, node):
+                            visible_segments.append(segment)
+                node.visible_rooms[room] = visible_segments
+
+    def is_segment_visible(self, segment, node):
+        for other_wall in self.level.walls:
+            if ((not isinstance(other_wall, Ledge)) and other_wall != segment.parent and
+                    other_wall.intersects(node, segment.center())):
+                return False
+        return True
 
     def closest_node(self, pos):
         # Just search through the nodes linearly since nodes won't necessarily be laid out in a
@@ -101,7 +140,7 @@ class NavigationGraph:
             path = AStarSearch(start,
                                goal_test=(lambda pos: pos in targets),
                                heuristic=(lambda pos: pos.distance(target_pos))).search()
-            if not path:
+            if path is None:
                 return None
 
             if path[0].x != start_pos.x or path[0].y != start_pos.y:
@@ -116,7 +155,7 @@ class NavigationGraph:
         start = self.closest_node(start_pos)
         if start:
             path = AStarSearch(start, goal_test, heuristic).search()
-            if not path:
+            if path is None:
                 return None
 
             if path[0].x != start_pos.x or path[0].y != start_pos.y:
@@ -131,10 +170,11 @@ class NavigationNode(Position):
         super().__init__(x, y)
         self.room = room
         room.add_node(self)
-        self.neighbors = [(None, None)] * 4 # East, North, West, South
+        self.neighbors = [(None, None, 0)] * 4 # East, North, West, South; (neighbor, wall, side)
+        self.visible_rooms = {} # Map from room to list of wall segments
 
-    def add_neighbor(self, direction, neighbor, wall):
-        self.neighbors[direction] = (neighbor, wall)
+    def add_neighbor(self, direction, neighbor, wall, side):
+        self.neighbors[direction] = (neighbor, wall, side)
 
     def contains(self, pos):
         return (pos.x >= self.x - 0.5 and pos.x <= self.x + 0.5 and
@@ -149,7 +189,7 @@ class NavigationNode(Position):
         return hash((self.x, self.y))
 
     def __repr__(self):
-        return "(%s, %s), neighbors: %s" % (self.x, self.y, [(n.x, n.y) for n, _ in self.neighbors
+        return "(%s, %s), neighbors: %s" % (self.x, self.y, [(n.x, n.y) for n, _, _ in self.neighbors
                                                              if n is not None])
 
 
@@ -160,6 +200,13 @@ class Room(planning.objects.Room):
 
     def add_node(self, node):
         self.nodes.append(node)
+
+    def determine_walls(self):
+        self.wall_segments = set()
+        for node in self.nodes:
+            for _, segment, direction in node.neighbors:
+                if segment and segment.parent and isinstance(segment.parent, Wall):
+                    self.wall_segments.add((segment, direction))
 
     def center(self):
         min_x = self.nodes[0].x

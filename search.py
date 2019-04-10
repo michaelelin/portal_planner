@@ -50,7 +50,7 @@ class AStarSearch:
                 yield node
 
     def expand_node(self, node):
-        for neighbor, wall in node.state.neighbors:
+        for neighbor, wall, _ in node.state.neighbors:
             if neighbor is not None:
                 path_cost = node.path_cost + node.state.distance(neighbor)
                 if self.can_explore(neighbor, path_cost):

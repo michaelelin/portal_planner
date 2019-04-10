@@ -32,6 +32,9 @@ class PredicateInstance:
     def __eq__(self, other):
         return self.predicate == other.predicate and self.args == other.args
 
+    def __repr__(self):
+        return '(%s %s)' % (self.predicate.name, ' '.join([arg.name for arg in self.args]))
+
 At = Predicate(
     'at', [Entity, Location]
 )

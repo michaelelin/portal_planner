@@ -25,3 +25,5 @@ class Planner:
         # Append a final path to the goal
         parsed.append(Pathfind(self.problem.level.player, self.problem.level.goal))
         return parsed
+
+
