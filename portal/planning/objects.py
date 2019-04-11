@@ -1,4 +1,4 @@
-from geometry import Position
+from portal.geometry import Position
 
 class Object:
     _object_counter = 0

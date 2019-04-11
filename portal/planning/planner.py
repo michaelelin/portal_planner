@@ -6,14 +6,18 @@ from .actions import actions, Pathfind
 class Planner:
     def __init__(self, problem):
         self.problem = problem
-        with open('planning/pddl/domain.pddl', 'r') as domain_file:
+        with open('portal/planning/pddl/domain.pddl', 'r') as domain_file:
             self.domain = domain_file.read()
 
     def plan(self):
         problem_str = sexpdata.dumps(self.problem.serialize(), str_as='symbol')
         data = { 'domain': self.domain, 'problem': problem_str }
-        r = requests.post('http://solver.planning.domains/solve', data=data)
-        return self.parse_actions(r.json()['result']['plan'])
+        r = requests.post('http://solver.planning.domains/solve', data=data).json()
+        if 'plan' in r['result']:
+            return self.parse_actions(r['result']['plan'])
+        else:
+            print(r['result']['error'])
+            raise Exception('planning failed')
 
     def parse_actions(self, action_data):
         parsed = []

@@ -1,9 +1,9 @@
 import math
 
-import planning.objects
-from search import AStarSearch
-from wall import *
-from geometry import Position
+from portal.planning import objects
+from portal.search import AStarSearch
+from portal.wall import *
+from portal.geometry import Position
 
 PATH_NONE = 0
 PATH_TO = 1
@@ -193,7 +193,7 @@ class NavigationNode(Position):
                                                              if n is not None])
 
 
-class Room(planning.objects.Room):
+class Room(objects.Room):
     def __init__(self):
         super().__init__()
         self.nodes = []

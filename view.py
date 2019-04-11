@@ -3,8 +3,8 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 
-from geometry import Position
-from level import Level
+from portal.geometry import Position
+from portal.level import Level
 
 FRAME_RATE = 60
 

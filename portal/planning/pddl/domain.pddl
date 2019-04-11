@@ -2,12 +2,24 @@
   (:requirements :strips :typing)
 
   (:types
-    location entity connector - object
-    button room void - location
-    movable switch portal - entity
-    portal1 portal2 - portal
-    door grill - connector
-    player item - movable
+    location - object
+    entity - object
+    connector - object
+
+    room - location
+    void - location
+    button - location
+
+    movable - entity
+    switch - entity
+    portal - entity
+
+    door - connector
+    grill - connector
+
+    player - movable
+    item - movable
+
     cube - item
     )
 

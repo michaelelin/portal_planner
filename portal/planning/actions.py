@@ -1,5 +1,5 @@
-from .objects import *
-import entity
+from portal import entity
+from portal.planning.objects import *
 
 class Action:
     begun = False
@@ -191,7 +191,6 @@ class EnterGrill(Move):
             self._reset_portals()
 
     def _reset_portals(self):
-        print('Resetting')
         for cap in self.level.capabilities:
             if cap == 'portal1':
                 self.level.entities_dict['portal1'].reset()

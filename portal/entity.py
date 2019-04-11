@@ -1,12 +1,12 @@
-import geometry
-from geometry import Position
-import planning.objects
+from portal import geometry
+from portal.geometry import Position
+from portal.planning import objects
 
 class Drawable:
     def draw(self, canvas):
         pass
 
-class Player(planning.objects.Player, Drawable):
+class Player(objects.Player, Drawable):
     carrying = None
     on_button = None
 
@@ -49,14 +49,15 @@ class Entity(Drawable):
     def deserialize(obj):
         return ENTITY_TYPES[obj['type']].deserialize(obj)
 
-class Portal(Entity, planning.objects.Portal):
+class Portal(Entity, objects.Portal):
     ORDER = 3
     SPEED = 0.2
     EPSILON = 0.01
     PROJECTILE_SIZE = 1
-    def __init__(self, pos1, pos2, name):
-        planning.objects.Object.__init__(self, name)
+    def __init__(self, pos1, pos2, name, color):
+        objects.Object.__init__(self, name)
         self.set_endpoints(pos1, pos2)
+        self.color = color
         self.target = None
 
     def reset(self):
@@ -78,12 +79,16 @@ class Portal(Entity, planning.objects.Portal):
         if self.pos1 and self.pos2:
             x1, y1 = self.pos1
             x2, y2 = self.pos2
-            canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1), width=3.0, fill=self.COLOR)
+            canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1),
+                               width=3.0,
+                               fill=self.color)
         elif self.x is not None and self.y is not None and self.target:
             distance = self.distance(self.target)
             dx = (self.target.x - self.x) * (self.PROJECTILE_SIZE / distance)
             dy = (self.target.y - self.y) * (self.PROJECTILE_SIZE / distance)
-            canvas.create_line(self.x - dx, self.y - dy, self.x, self.y, width=3.0, fill=self.COLOR)
+            canvas.create_line(self.x - dx, self.y - dy, self.x, self.y,
+                               width=3.0,
+                               fill=self.color)
 
     def move_toward(self, target, speed):
         super().move_toward(target, speed)
@@ -93,7 +98,7 @@ class Portal(Entity, planning.objects.Portal):
         if self.pos1 and self.pos2:
             return super().get_location(level)
         else:
-            return planning.objects.PORTAL_VOID
+            return objects.PORTAL_VOID
 
     def create_on(self, segment, origin):
         intersection = segment.intersects(origin, segment.center())
@@ -109,21 +114,19 @@ class Portal(Entity, planning.objects.Portal):
         pos1 = obj.get('pos1')
         pos2 = obj.get('pos2')
         if pos1 and pos2:
-            return cls(tuple(pos1), tuple(pos2))
+            return Portal(tuple(pos1), tuple(pos2), cls.NAME, cls.COLOR)
         else:
-            return cls(None, None)
+            return Portal(None, None, cls.NAME, cls.COLOR)
 
 class Portal1(Portal):
+    NAME = 'portal1'
     COLOR = 'orange'
-    def __init__(self, pos1, pos2):
-        super().__init__(pos1, pos2, "portal1")
 
 class Portal2(Portal):
+    NAME = 'portal2'
     COLOR = 'dodger blue'
-    def __init__(self, pos1, pos2):
-        super().__init__(pos1, pos2, "portal2")
 
-class Cube(Entity, planning.objects.Cube):
+class Cube(Entity, objects.Cube):
     ORDER = 2
     def draw(self, canvas):
         canvas.create_rectangle(self.x - 0.3, self.y - 0.3, self.x + 0.3, self.y + 0.3, fill='black')
@@ -132,11 +135,11 @@ class Cube(Entity, planning.objects.Cube):
     def deserialize(obj):
         return Cube(*obj['pos'])
 
-class Button(planning.objects.Button, Position):
+class Button(objects.Button, Position):
     ORDER = 1
     DRAW_RADIUS = 0.8
     def __init__(self, x, y):
-        planning.objects.Button.__init__(self)
+        objects.Button.__init__(self)
         Position.__init__(self, x, y)
         self.objects = set()
 

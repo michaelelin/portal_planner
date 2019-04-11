@@ -1,10 +1,8 @@
 import json
 import sys
 
-from animate import ActionSequence
-from level import Level
-from planning.predicates import *
-from planning.objects import *
+from portal.animate import ActionSequence
+from portal.level import Level
 from view import LevelView
 
 if __name__ == '__main__':

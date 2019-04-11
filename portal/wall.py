@@ -1,8 +1,8 @@
 import tkinter as tk
 
-from geometry import Position
-import geometry
-import planning.objects
+from portal import geometry
+from portal.geometry import Position
+from portal.planning import objects
 
 class Segment:
     def __init__(self, pos1, pos2, parent=None):
@@ -72,10 +72,10 @@ class Wall(Segment):
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
 
 
-class Door(Segment, planning.objects.Door):
+class Door(Segment, objects.Door):
     def __init__(self, pos1, pos2, triggers):
         Segment.__init__(self, pos1, pos2)
-        planning.objects.Door.__init__(self)
+        objects.Door.__init__(self)
         self.triggers = triggers
 
     def is_open(self):
@@ -92,10 +92,10 @@ class Door(Segment, planning.objects.Door):
     def translate_properties(props, entities):
         props['triggers'] = [entities[t] for t in props['triggers']]
 
-class Grill(Segment, planning.objects.Grill):
+class Grill(Segment, objects.Grill):
     def __init__(self, pos1, pos2):
         Segment.__init__(self, pos1, pos2)
-        planning.objects.Grill.__init__(self)
+        objects.Grill.__init__(self)
 
     def draw(self, canvas):
         canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, fill="light blue")

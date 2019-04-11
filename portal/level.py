@@ -1,11 +1,11 @@
 import json
 import os
 
-from entity import Entity, Player
-from navigation import NavigationGraph
-from wall import Segment
-from planning.problem import Problem
-from geometry import Position
+from portal.entity import Entity, Player
+from portal.navigation import NavigationGraph
+from portal.wall import Segment
+from portal.planning.problem import Problem
+from portal.geometry import Position
 
 class Level:
     def __init__(self, name, walls, entities, start, goal, capabilities):
