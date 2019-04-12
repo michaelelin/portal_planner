@@ -1,5 +1,5 @@
 (define (domain portal)
-  (:requirements :strips :typing)
+  (:requirements :strips :typing :equality)
 
   (:types
     location - object
@@ -56,7 +56,8 @@
                 ?to - location
                 )
    :precondition (and (connected ?from ?to)
-                      (at ?player ?from))
+                      (at ?player ?from)
+                      (not (= ?from ?to)))
    :effect (and (at ?player ?to)
                 (not (at ?player ?from))))
 
@@ -94,7 +95,8 @@
                 )
    :precondition (and (at ?player ?from)
                       (at ?portal1 ?from)
-                      (at ?portal2 ?to))
+                      (at ?portal2 ?to)
+                      (not (= ?portal1 ?portal2)))
    :effect (and (not (at ?player ?from))
                 (at ?player ?to)))
 

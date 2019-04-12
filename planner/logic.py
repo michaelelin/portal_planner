@@ -3,6 +3,12 @@ from value import Binding
 
 
 class Expression:
+    def test(self, state, env={}):
+        raise NotImplementedError('test not implemented for %s' % self.__class__.__name__)
+
+    def apply(self, fluents, env={}):
+        raise NotImplementedError('apply not implemented for %s' % self.__class__.__name__)
+
     @staticmethod
     def deserialize(expr, domain, env):
         op = expr[0]
@@ -12,12 +18,14 @@ class Expression:
             expr_class = Or
         elif op == 'not':
             expr_class = Not
+        elif op == 'imply':
+            expr_class = Implies
         elif op == 'exists':
             expr_class = Exists
         elif op == 'forall':
             expr_class = Forall
-        elif op == 'imply':
-            expr_class = Implies
+        elif op == '=':
+            expr_class = Equal
         else:
             expr_class = PredicateInstance
         return expr_class.deserialize(expr, domain, env)
@@ -40,7 +48,24 @@ class Predicate:
 class PredicateInstance(Expression):
     def __init__(self, predicate, args):
         self.predicate = predicate
-        self.args = args
+        self.args = tuple(args)
+
+    def test(self, state, env={}):
+        if not state.fluents:
+            import ipdb; ipdb.set_trace()
+        return self.substitute(env) in state.fluents
+
+    def apply(self, fluents, env={}):
+        fluents.add(self.substitute(env))
+
+    def substitute(self, env):
+        return PredicateInstance(self.predicate, [arg.substitute(env) for arg in self.args])
+
+    def __hash__(self):
+        return hash((self.predicate, self.args))
+
+    def __eq__(self, other):
+        return self.predicate == other.predicate and self.args == other.args
 
     def __repr__(self):
         return '(%s %s)' % (self.predicate.name, ' '.join([a.name for a in self.args]))
@@ -56,6 +81,16 @@ class And(Expression):
     def __init__(self, *args):
         self.args = args
 
+    def test(self, state, env={}):
+        for arg in self.args:
+            if not arg.test(state, env):
+                return False
+        return True
+
+    def apply(self, fluents, env={}):
+        for arg in self.args:
+            arg.apply(fluents, env)
+
     def __repr__(self):
         return '(and %s)' % ' '.join([str(a) for a in self.args])
 
@@ -69,6 +104,12 @@ class Or(Expression):
     def __init__(self, *args):
         self.args = args
 
+    def test(self, state, env={}):
+        for arg in self.args:
+            if arg.test(state, env):
+                return True
+        return False
+
     def __repr__(self):
         return '(or %s)' % ' '.join([str(a) for a in self.args])
 
@@ -81,6 +122,13 @@ class Or(Expression):
 class Not(Expression):
     def __init__(self, arg):
         self.arg = arg
+
+    def test(self, state, env={}):
+        return not self.arg.test(state, env)
+
+    def apply(self, fluents, env={}):
+        assert(isinstance(self.arg, PredicateInstance))
+        fluents.discard(self.arg.substitute(env))
 
     def __repr__(self):
         return '(not %s)' % str(self.arg)
@@ -97,6 +145,9 @@ class Implies(Expression):
         self.left = left
         self.right = right
 
+    def test(self, state, env={}):
+        return (not self.left.test(state, env)) or self.right.test(state, env)
+
     def __repr__(self):
         return '(imply %s %s)' % (str(self.left), str(self.right))
 
@@ -112,6 +163,13 @@ class Exists(Expression):
     def __init__(self, vars, expr):
         self.vars = vars
         self.expr = expr
+
+    def test(self, state, env={}):
+        for binding in state.possible_bindings([v.type for v in self.vars]):
+            new_env = {**env, **dict(zip(self.vars, binding))}
+            if self.expr.test(state, new_env):
+                return True
+        return False
 
     def __repr__(self):
         return '(exists (%s) %s)' % (' '.join(v.name for v in self.vars), str(self.expr))
@@ -131,6 +189,13 @@ class Forall(Expression):
         self.vars = vars
         self.expr = expr
 
+    def test(self, state, env={}):
+        for binding in state.possible_bindings([v.type for v in self.vars]):
+            new_env = {**env, **dict(zip(self.vars, binding))}
+            if not self.expr.test(state, new_env):
+                return False
+        return True
+
     def __repr__(self):
         return '(forall (%s) %s)' % (' '.join(v.name for v in self.vars), str(self.expr))
 
@@ -143,3 +208,22 @@ class Forall(Expression):
         new_env = {**env, **{b.name: b for b in vars}}
         expr = Expression.deserialize(expr[2], domain, new_env)
         return Forall(vars, expr)
+
+class Equal(Expression):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def test(self, state, env={}):
+        return self.left.substitute(env) == self.right.substitute(env)
+
+    def __repr__(self):
+        return '(= %s %s)' % (str(self.left), str(self.right))
+
+    @staticmethod
+    def deserialize(expr, domain, env):
+        assert(expr[0] == '=')
+        assert(len(expr) == 3)
+        left = env[expr[1]]
+        right = env[expr[2]]
+        return Equal(left, right)

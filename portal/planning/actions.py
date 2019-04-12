@@ -13,10 +13,10 @@ class Action:
         pass
 
     def step(self):
-        raise Exception('step not implemented for %s' % self.__class__.__name__)
+        raise NotImplementedError('step not implemented for %s' % self.__class__.__name__)
 
     def finished(self):
-        raise Exception('finished not implemented for %s' % self.__class__.__name__)
+        raise NotImplementedError('finished not implemented for %s' % self.__class__.__name__)
 
 # Sub-action that's useful for many others
 class Pathfind(Action):

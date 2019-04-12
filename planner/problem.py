@@ -1,8 +1,11 @@
+from collections import defaultdict
+
 import sexpdata
 
 import utils
 from value import Value
 from logic import Expression, PredicateInstance
+from search import ForwardSearch
 
 class Problem:
     def __init__(self, name, domain, objects, init, goal):
@@ -11,6 +14,18 @@ class Problem:
         self.objects = objects
         self.init = init
         self.goal = goal
+        self.cache_objects_of_type()
+
+    def cache_objects_of_type(self):
+        self.objects_of_type = defaultdict(list)
+        for obj in (list(self.domain.constants.values()) + list(self.objects.values())):
+            typ = obj.type
+            while typ:
+                self.objects_of_type[typ].append(obj)
+                typ = typ.parent
+
+    def plan(self):
+        return ForwardSearch(self).search()
 
     @staticmethod
     def load(filename, domain):

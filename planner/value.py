@@ -9,6 +9,9 @@ class Value:
     def belongs_to(self, typ):
         return self.type.subtype(typ)
 
+    def substitute(self, env):
+        return env.get(self, self)
+
     def __repr__(self):
         return 'Value(name=%s, type=%s)' % (self.name, self.type.name)
 

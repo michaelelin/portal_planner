@@ -6,11 +6,12 @@ from value import Value, Type
 from logic import Predicate
 
 class Domain:
-    def __init__(self, name, types={}, predicates={}, actions={}):
+    def __init__(self, name, types=None, constants=None, predicates=None, actions=None):
         self.name = name
-        self.types = types
-        self.predicates = predicates
-        self.actions = actions
+        self.types = types or {}
+        self.constants = constants or []
+        self.predicates = predicates or {}
+        self.actions = actions or {}
 
     @staticmethod
     def load(filename):
