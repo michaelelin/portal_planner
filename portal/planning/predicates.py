@@ -1,5 +1,5 @@
 # This is kind of messy, these should probably be more centralized
-from .objects import *
+from portal.planning.objects import *
 
 class Predicate:
     def __init__(self, name, types):

@@ -2,10 +2,10 @@ from collections import defaultdict
 
 import sexpdata
 
-import utils
-from value import Value
-from logic import Expression, PredicateInstance
-from search import ForwardSearch
+from planner import utils
+from planner.value import Value
+from planner.logic import Expression, PredicateInstance
+from planner.search import ForwardSearch
 
 class Problem:
     def __init__(self, name, domain, objects, init, goal):
@@ -28,9 +28,8 @@ class Problem:
         return ForwardSearch(self).search()
 
     @staticmethod
-    def load(filename, domain):
-        with open(filename, 'r') as f:
-            data = utils.desymbolize(sexpdata.load(f))
+    def load(f, domain):
+        data = utils.desymbolize(sexpdata.load(f))
         return Problem.deserialize(data, domain)
 
     @staticmethod

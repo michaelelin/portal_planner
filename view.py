@@ -20,7 +20,7 @@ class LevelCanvas(tk.Canvas):
         self.path_lines = []
 
     def _calculate_transform(self):
-        (x_min, y_min, x_max, y_max) = self.level.bounds()
+        (x_min, y_min, x_max, y_max) = self.level.bounds
         center_x = (x_min + x_max) * 0.5
         center_y = (y_min + y_max) * 0.5
 

@@ -1,7 +1,6 @@
-import utils
-
-from logic import Expression
-from value import Binding
+from planner import utils
+from planner.logic import Expression
+from planner.value import Binding
 
 class Action:
     def __init__(self, name, parameters, precondition, effect):
@@ -35,6 +34,9 @@ class ActionInstance:
 
     def apply(self, fluents):
         self.action.effect.apply(fluents, dict(zip(self.action.parameters, self.args)))
+
+    def serialize(self):
+        return [self.action.name, *[a.name for a in self.args]]
 
     def __repr__(self):
         return '(%s %s)' % (self.action.name, ' '.join([a.name for a in self.args]))

@@ -32,14 +32,23 @@ class Pathfind(Action):
         self.index = 0
 
     def step(self):
-        curr_node = self.path[self.index]
-        next_node = self.path[self.index+1]
-        self.player.move_toward(next_node, Pathfind.SPEED)
-        if self.player.distance_squared(next_node) < Pathfind.EPSILON:
+        for i in range(self.index, len(self.path)):
+            if self.level.segment_intersects(self.player, self.path[i], radius=0.4):
+                break
+            self.index = i
+
+        self.player.move_toward(self.path[self.index], Pathfind.SPEED)
+        if self.player.distance_squared(self.path[self.index]) < Pathfind.EPSILON:
             self.index += 1
 
+        # curr_node = self.path[self.index]
+        # next_node = self.path[self.index+1]
+        # self.player.move_toward(next_node, Pathfind.SPEED)
+        # if self.player.distance_squared(next_node) < Pathfind.EPSILON:
+        #     self.index += 1
+
     def finished(self):
-        return self.index >= len(self.path) - 1
+        return self.index >= len(self.path)
 
 
 

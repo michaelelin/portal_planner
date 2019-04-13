@@ -20,7 +20,7 @@ class NavigationGraph:
     def build_graph(self):
         self.nodes = {}
         self.rooms = []
-        x_min, y_min, x_max, y_max = self.level.bounds()
+        x_min, y_min, x_max, y_max = self.level.bounds
         x_min = math.floor(x_min) - 1
         y_min = math.floor(y_min) - 1
         x_max = math.ceil(x_max)
@@ -63,10 +63,12 @@ class NavigationGraph:
     # added to the frontier
     def add_neighbor(self, node, direction, pos, next_pos):
         next_node = self.nodes.get(next_pos)
-        for wall in self.level.walls:
-            x1, y1 = pos
-            x2, y2 = next_pos
-            intersection = wall.intersects(Position(x1 + 0.5, y1 + 0.5), Position(x2 + 0.5, y2 + 0.5))
+        x1, y1 = pos
+        x2, y2 = next_pos
+        p1 = Position(x1 + 0.5, y1 + 0.5)
+        p2 = Position(x2 + 0.5, y2 + 0.5)
+        for wall in self.level.possible_intersections(p1, p2):
+            intersection = wall.intersects(p1, p2)
             # If we've already explored this node, add the appropriate connections.
             # If not, then if there's no wall between the two nodes, add it to our frontier.
             # If there is a wall, leave it to be discovered (and potentially connected)
@@ -75,8 +77,7 @@ class NavigationGraph:
                 # Need special handling so we can determine which segments to create portals on
                 if isinstance(wall, Wall):
                     for segment in wall.segments:
-                        if segment.intersects(Position(x1 + 0.5, y1 + 0.5),
-                                              Position(x2 + 0.5, y2 + 0.5)):
+                        if segment.intersects(p1, p2):
                             node.add_neighbor(direction, None, segment, intersection)
                 elif next_node:
                     if isinstance(wall, Door) or isinstance(wall, Grill):
@@ -114,7 +115,7 @@ class NavigationGraph:
                 node.visible_rooms[room] = visible_segments
 
     def is_segment_visible(self, segment, node):
-        for other_wall in self.level.walls:
+        for other_wall in self.level.possible_intersections(node, segment.center()):
             if ((not isinstance(other_wall, Ledge)) and other_wall != segment.parent and
                     other_wall.intersects(node, segment.center())):
                 return False

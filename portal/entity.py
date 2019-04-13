@@ -1,5 +1,4 @@
-from portal import geometry
-from portal.geometry import Position
+from portal.geometry import Position, Segment
 from portal.planning import objects
 
 class Drawable:
@@ -67,9 +66,8 @@ class Portal(Entity, objects.Portal):
         self.pos1 = pos1
         self.pos2 = pos2
         if pos1 and pos2:
-            x1, y1, x2, y2 = geometry.offset_line(*self.pos1, *self.pos2, -0.1)
-            self.x = (x1 + x2) * 0.5
-            self.y = (y1 + y2) * 0.5
+            offset = Segment(self.pos1, self.pos2).offset(-0.1)
+            self.x, self.y = offset.center().pos()
         else:
             self.x = None
             self.y = None
@@ -79,7 +77,8 @@ class Portal(Entity, objects.Portal):
         if self.pos1 and self.pos2:
             x1, y1 = self.pos1
             x2, y2 = self.pos2
-            canvas.create_line(*geometry.offset_line(x1, y1, x2, y2, -0.1),
+            offset = Segment(self.pos1, self.pos2).offset(-0.1)
+            canvas.create_line(offset.x1, offset.y1, offset.x2, offset.y2,
                                width=3.0,
                                fill=self.color)
         elif self.x is not None and self.y is not None and self.target:

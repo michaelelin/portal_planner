@@ -1,9 +1,9 @@
 import sexpdata
 
-import utils
-from actions import Action
-from value import Value, Type
-from logic import Predicate
+from planner import utils
+from planner.actions import Action
+from planner.value import Value, Type
+from planner.logic import Predicate
 
 class Domain:
     def __init__(self, name, types=None, constants=None, predicates=None, actions=None):
@@ -14,9 +14,8 @@ class Domain:
         self.actions = actions or {}
 
     @staticmethod
-    def load(filename):
-        with open(filename, 'r') as f:
-            data = utils.desymbolize(sexpdata.load(f))
+    def load(f):
+        data = utils.desymbolize(sexpdata.load(f))
         return Domain.deserialize(data)
 
     @staticmethod

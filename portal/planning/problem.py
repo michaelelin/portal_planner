@@ -1,6 +1,6 @@
-from .predicates import *
-from .objects import *
-from .planner import Planner
+from portal.planning.predicates import *
+from portal.planning.objects import *
+from portal.planning.planner import ForwardSearchPlanner
 
 class Problem:
     def __init__(self, level):
@@ -88,4 +88,4 @@ class Problem:
                 goal]
 
     def solve(self):
-        return Planner(self).plan()
+        return ForwardSearchPlanner(self).plan()
