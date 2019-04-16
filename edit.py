@@ -1,6 +1,6 @@
 import math
+import sys
 import tkinter as tk
-from tkinter import messagebox
 from tkinter import filedialog
 from tkinter import ttk
 
@@ -45,23 +45,37 @@ class ControlPanel(ttk.Frame):
         self.canvas = canvas
         self.level = canvas.level
         self._setup_scale()
+        self._setup_name()
         self._setup_capabilities()
         self._setup_tools()
         ttk.Button(self, text='Run', command=self._run).pack(side='bottom')
         ttk.Button(self, text='Save', command=self._save).pack(side='bottom')
 
     def _setup_scale(self):
-        self.scale_frame = ttk.Frame(self, width=self.width)
+        scale_frame = ttk.Frame(self, width=self.width)
 
-        ttk.Label(self.scale_frame, text='Zoom:').pack(side='left')
+        ttk.Label(scale_frame, text='Zoom:').pack(side='left')
 
-        self.scale = ttk.Scale(self.scale_frame, from_=10, to=100,
+        self.scale = ttk.Scale(scale_frame, from_=10, to=100,
                               orient=tk.HORIZONTAL,
                               command=self.canvas.set_scale)
         self.scale.pack(side='right')
 
-        self.scale_frame.pack(side='top', fill=tk.BOTH)
+        scale_frame.pack(side='top', fill=tk.BOTH)
         self.scale.set(60)
+
+    def _setup_name(self):
+        name_frame = ttk.Frame(self, width=self.width)
+
+        self.name_var = tk.StringVar()
+        ttk.Label(name_frame, text='Level name:').pack(side='left')
+        name_entry = ttk.Entry(name_frame, textvariable=self.name_var, validatecommand=print)
+        name_entry.pack(side='left')
+        name_frame.pack(side='top', fill=tk.BOTH)
+        name_entry.bind('<Key-Return>', self._update_name)
+        name_entry.bind('<FocusOut>', self._update_name)
+
+        self.name_var.set(self.level.name)
 
     def _setup_capabilities(self):
         capabilities_frame = ttk.LabelFrame(self, text='Capabilities',
@@ -77,6 +91,8 @@ class ControlPanel(ttk.Frame):
                 variable=var,
                 command=(lambda name=name: self._update_capability(name))
             ).pack(side='top', anchor='w')
+        for capability in self.level.capabilities:
+            self.capabilities_vars[capability].set(1)
 
     def _setup_tools(self):
         tools_frame = ttk.LabelFrame(self, text='Tools',
@@ -84,7 +100,6 @@ class ControlPanel(ttk.Frame):
         tools_frame.pack(side='top', fill=tk.BOTH)
         self._tool_id = tk.IntVar()
 
-        # ttk.Label(self, text='Tool:').pack(side='top')
         for i, tool in enumerate(tools.TOOLS):
             ttk.Radiobutton(
                 tools_frame,
@@ -96,6 +111,10 @@ class ControlPanel(ttk.Frame):
 
         self._tool_id.set(0)
         self._set_tool(0)
+
+    def _update_name(self, event):
+        self.level.name = self.name_var.get()
+        self.canvas.redraw()
 
     def _update_capability(self, name):
         if self.capabilities_vars[name].get():
@@ -111,10 +130,7 @@ class ControlPanel(ttk.Frame):
         problem = level.planning_problem()
         plan = problem.solve()
 
-        if plan is not None:
-            LevelView(level, ActionSequence(level, plan)).start()
-        else:
-            messagebox.showerror("Planning failed", "No solution found")
+        LevelView(level, ActionSequence(level, plan)).start()
 
     def _save(self):
         path = filedialog.asksaveasfilename(
@@ -130,6 +146,7 @@ class EditView:
     def __init__(self, level, width=800, height=600):
         self.level = level
         self.root = tk.Tk()
+        self.root.title('Editor')
         self.app = tk.Frame(self.root)
         self.canvas = EditorCanvas(self.app, self.level, width=width, height=height)
         self.canvas.pack(side='left', fill=tk.BOTH, expand=True)
@@ -165,5 +182,10 @@ class EditView:
 
 
 if __name__ == '__main__':
-    level = Level()
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+        with open(filename, 'r') as f:
+            level = Level.load(f)
+    else:
+        level = Level()
     EditView(level).start()

@@ -9,5 +9,6 @@ BUTTON = 'red'
 BUTTON_ACTIVE = 'dark red'
 TRIGGER = 'blue'
 WALL = 'black'
+PORTAL_WALL = 'saddle brown'
 
 GRID = 'gray'

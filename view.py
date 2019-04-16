@@ -1,6 +1,7 @@
 import functools
 import sys
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import ttk
 
 from portal.geometry import Position
@@ -106,6 +107,7 @@ class LevelView:
         self.level = level
         self.sequence = sequence
         self.root = tk.Tk()
+        self.root.title(level.name)
         self.app = tk.Frame(self.root)
         self.canvas = LevelCanvas(self.app, self.level, width=width, height=height)
         self.canvas.pack(side='top', fill=tk.BOTH, expand=True)
@@ -123,7 +125,10 @@ class LevelView:
         self.root.mainloop()
 
     def play(self):
-        self.root.after(int(1000 / FRAME_RATE), self.step)
+        if self.sequence.actions is not None:
+            self.root.after(int(1000 / FRAME_RATE), self.step)
+        else:
+            messagebox.showerror("Planning failed", "No solution found")
 
     def step(self):
         self.sequence.step()

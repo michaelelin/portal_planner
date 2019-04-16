@@ -12,7 +12,7 @@ from portal.geometry import Position, Segment
 class Level:
     def __init__(self, name=None, walls=None, entities=None, start=None, goal=None,
                  capabilities=None):
-        self.name = name
+        self.name = name or 'New Level'
         self.walls = walls or []
         self.entities = entities or [Portal(None, None, 'portal1'), Portal(None, None, 'portal2')]
         self.entities_dict = { e.name: e for e in self.entities }

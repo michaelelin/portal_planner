@@ -76,10 +76,12 @@ class NavigationGraph:
             # later.
             if intersection:
                 # Need special handling so we can determine which segments to create portals on
-                if isinstance(wall, Wall):
+                if isinstance(wall, PortalWall):
                     for segment in wall.segments:
                         if segment.intersects(p1, p2):
                             node.add_neighbor(direction, None, segment, intersection)
+                elif isinstance(wall, Wall):
+                    node.add_neighbor(direction, None, wall, intersection)
                 elif next_node:
                     if isinstance(wall, Door) or isinstance(wall, Grill):
                         path_from = True
@@ -207,7 +209,7 @@ class Room(objects.Room):
         self.wall_segments = set()
         for node in self.nodes:
             for _, segment, direction in node.neighbors:
-                if segment and segment.parent and isinstance(segment.parent, Wall):
+                if segment and segment.parent and isinstance(segment.parent, PortalWall):
                     self.wall_segments.add((segment, direction))
 
     def center(self):

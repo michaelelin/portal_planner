@@ -1,6 +1,6 @@
 import colors
 from portal.geometry import Position
-from portal.wall import Wall, Ledge, Door, Grill
+from portal.wall import Wall, PortalWall, Ledge, Door, Grill
 from portal.entity import Portal, Cube, Button
 
 class Tool:
@@ -74,6 +74,11 @@ class WallTool(SegmentTool):
     name = 'Wall'
     def _make_segment(self, pos1, pos2):
         return Wall(pos1, pos2)
+
+class PortalWallTool(SegmentTool):
+    name = 'Portalable wall'
+    def _make_segment(self, pos1, pos2):
+        return PortalWall(pos1, pos2)
 
 class LedgeTool(SegmentTool):
     name = 'Ledge'
@@ -267,6 +272,7 @@ TOOLS = [
     PlayerTool,
     GoalTool,
     WallTool,
+    PortalWallTool,
     LedgeTool,
     DoorTool,
     GrillTool,

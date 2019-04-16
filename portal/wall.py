@@ -29,6 +29,15 @@ class WallSegment(Segment):
         pass
 
 class Wall(WallSegment):
+    def draw(self, canvas):
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND,
+                           fill=colors.WALL)
+
+    def serialize(self):
+        return {**WallSegment.serialize(self),
+                **{ 'type': 'wall' }}
+
+class PortalWall(Wall):
     def __init__(self, pos1, pos2):
         super().__init__(pos1, pos2)
         self._segment()
@@ -44,8 +53,16 @@ class Wall(WallSegment):
                                              self))
 
     def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND,
-                           fill=colors.WALL)
+        s1 = self.offset(-0.04)
+        s2 = self.offset(0.04)
+        canvas.create_line(s1.x1, s1.y1, s1.x2, s1.y2, width=2.0, capstyle=tk.ROUND,
+                           fill=colors.PORTAL_WALL)
+        canvas.create_line(s2.x1, s2.y1, s2.x2, s2.y2, width=2.0, capstyle=tk.ROUND,
+                           fill=colors.PORTAL_WALL)
+
+    def serialize(self):
+        return {**WallSegment.serialize(self),
+                **{ 'type': 'portal-wall' }}
 
 
 class Door(WallSegment, objects.Door):
@@ -110,6 +127,7 @@ class Ledge(WallSegment):
 
 WALL_TYPES = {
     'wall': Wall,
+    'portal-wall': PortalWall,
     'door': Door,
     'grill': Grill,
     'ledge': Ledge
