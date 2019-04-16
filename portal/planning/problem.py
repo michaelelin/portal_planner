@@ -1,6 +1,6 @@
 from portal.planning.predicates import *
 from portal.planning.objects import *
-from portal.planning.planner import ForwardSearchPlanner
+from portal.planning.planner import ForwardSearchPlanner, RemotePlanner
 
 class Problem:
     def __init__(self, level):
@@ -87,5 +87,9 @@ class Problem:
                 init,
                 goal]
 
-    def solve(self):
-        return ForwardSearchPlanner(self).plan()
+    def solve(self, remote=False):
+        if remote:
+            planner = RemotePlanner(self)
+        else:
+            planner = ForwardSearchPlanner(self)
+        return planner.plan()

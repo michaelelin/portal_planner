@@ -32,11 +32,9 @@ class EditorCanvas(LevelCanvas):
 class ControlPanel(ttk.Frame):
     CAPABILITIES = [('portal1', 'Create orange portal'),
                     ('portal2', 'Create blue portal')]
-    def __init__(self, app, canvas, width):
-        style = ttk.Style()
-        style.theme_use('aqua')
-
+    def __init__(self, app, canvas, width, remote=False):
         self.width = width
+        self.remote = remote
         super().__init__(app, width=width,
                          borderwidth=2,
                          relief=tk.SUNKEN,
@@ -128,7 +126,7 @@ class ControlPanel(ttk.Frame):
     def _run(self):
         level = Level.deserialize(self.level.serialize())
         problem = level.planning_problem()
-        plan = problem.solve()
+        plan = problem.solve(self.remote)
 
         LevelView(level, ActionSequence(level, plan)).start()
 
@@ -143,7 +141,7 @@ class ControlPanel(ttk.Frame):
 
 
 class EditView:
-    def __init__(self, level, width=800, height=600):
+    def __init__(self, level, width=800, height=600, remote=False):
         self.level = level
         self.root = tk.Tk()
         self.root.title('Editor')
@@ -154,7 +152,7 @@ class EditView:
         self.canvas.bind('<B1-Motion>', self._mousemove)
         self.canvas.bind('<ButtonRelease-1>', self._mouseup)
 
-        self.edit_pane = ControlPanel(self.app, self.canvas, width=300)
+        self.edit_pane = ControlPanel(self.app, self.canvas, width=300, remote=remote)
         self.edit_pane.pack(side='right', fill=tk.BOTH)
 
         self.app.pack(fill=tk.BOTH, expand=True)
@@ -174,10 +172,16 @@ class EditView:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        filename = sys.argv[1]
+    args = list(sys.argv)
+    remote = False
+    if '-r' in args:
+        remote = True
+        args.remove('-r')
+
+    if len(args) > 1:
+        filename = args[1]
         with open(filename, 'r') as f:
             level = Level.load(f)
     else:
         level = Level()
-    EditView(level).start()
+    EditView(level, remote=remote).start()

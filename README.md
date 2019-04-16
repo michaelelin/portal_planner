@@ -17,14 +17,14 @@ There are three entry points to the program. In order of increasing complexity:
 $ python3 view.py <level-file>
 ```
 
-**Solver**: Solves an existing level and animates the solution. Note that this can get kind of slow on some levels (e.g. `levels/p05.json` takes several seconds on my machine). This is because my planner implementation is very basic and poorly optimized and doesn't use any heuristics in its state space search.
+**Solver**: Solves an existing level and animates the solution. Note that this can get kind of slow on some levels (e.g. `levels/p05.json` takes several seconds on my machine). This is because my planner implementation is very basic and poorly optimized and doesn't use any heuristics in its state space search. To use a [much faster remote planner](http://solver.planning.domains/) that I did not write, add the `-r` flag to the command.
 ```
-$ python3 solve.py <level-file>
+$ python3 solve.py [-r] <level-file>
 ```
 
 **Editor**: Allows creation and editing of levels. Note that `level-file` is optional here; if none is included, a new level will be created.
 ```
-$ python3 edit.py [level-file]
+$ python3 edit.py [-r] [level-file]
 ```
 The editor allows the user to:
 - Adjust the zoom level with a slider (because my version on Tk on MacOS is buggy so scroll events don't work)
