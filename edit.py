@@ -161,12 +161,7 @@ class EditView:
 
     def start(self):
         self.canvas.redraw()
-        while True:
-            try:
-                self.root.mainloop()
-                break
-            except UnicodeDecodeError:
-                pass
+        self.root.mainloop()
 
     def _mousedown(self, event):
         self.edit_pane.tool.mousedown(*self.canvas.preimage_point((event.x, event.y)))
@@ -176,9 +171,6 @@ class EditView:
 
     def _mouseup(self, event):
         self.edit_pane.tool.mouseup(*self.canvas.preimage_point((event.x, event.y)))
-
-    def _scroll(self, event):
-        import ipdb; ipdb.set_trace()
 
 
 if __name__ == '__main__':

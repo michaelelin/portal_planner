@@ -17,15 +17,16 @@ class LevelCanvas(tk.Canvas):
         self.scale = None
         super().__init__(app, width=width, height=height)
 
+        self.pan_from = None
+        self.pan_orig = None
+        self.pan_offset = Position(0, 0)
+
         self.calculate_transform()
         self.path_lines = []
-        self.bind('<Configure>', self.resize)
-
-    def resize(self, event):
-        self.width = event.width
-        self.height = event.height
-        self.calculate_transform()
-        self.redraw()
+        self.bind('<Configure>', self._resize)
+        self.bind('<Button-2>', self._pan_start)
+        self.bind('<B2-Motion>', self._pan_move)
+        self.bind('<ButtonRelease-2>', self._pan_end)
 
     def set_scale(self, scale):
         self.scale = float(scale)
@@ -46,6 +47,7 @@ class LevelCanvas(tk.Canvas):
             Translate(-center_x, -center_y),
             Dilate(scale),
             Translate(self.width * 0.5, self.height * 0.5),
+            Translate(self.pan_offset.x, self.pan_offset.y),
         ]
         self.inverse_transform = [t.inverse() for t in reversed(self.transform)]
 
@@ -73,6 +75,27 @@ class LevelCanvas(tk.Canvas):
     def redraw(self):
         self.delete('all')
         self.level.draw(self)
+
+    def _resize(self, event):
+        self.width = event.width
+        self.height = event.height
+        self.calculate_transform()
+        self.redraw()
+
+    def _pan_start(self, event):
+        self.pan_from = Position(event.x, event.y)
+        self.pan_orig = Position(*self.pan_offset.pos())
+
+    def _pan_move(self, event):
+        self.pan_offset.x = self.pan_orig.x + event.x - self.pan_from.x
+        self.pan_offset.y = self.pan_orig.y + event.y - self.pan_from.y
+        self.calculate_transform()
+        self.redraw()
+
+    def _pan_end(self, event):
+        self._pan_move(event)
+        self.pan_from = None
+        self.pan_orig = None
 
 class Transform:
     def apply(self, pos):
