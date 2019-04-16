@@ -9,24 +9,36 @@ from portal.level import Level
 FRAME_RATE = 60
 
 class LevelCanvas(tk.Canvas):
-    def __init__(self, app, level, width=400, height=400):
+    def __init__(self, app, level, width, height):
         self.level = level
         self.width = width
         self.height = height
-        tk.Canvas.__init__(self, app, width=width, height=height)
-        self.bind('<Button-1>', self.handle_click)
+        self.scale = None
+        super().__init__(app, width=width, height=height)
 
-        self._calculate_transform()
+        self.calculate_transform()
         self.path_lines = []
+        self.bind('<Configure>', self.resize)
 
-    def _calculate_transform(self):
+    def resize(self, event):
+        self.width = event.width
+        self.height = event.height
+        self.calculate_transform()
+        self.redraw()
+
+    def set_scale(self, scale):
+        self.scale = float(scale)
+        self.calculate_transform()
+        self.redraw()
+
+    def calculate_transform(self):
         (x_min, y_min, x_max, y_max) = self.level.bounds
         center_x = (x_min + x_max) * 0.5
         center_y = (y_min + y_max) * 0.5
 
-        level_width = x_max - x_min
-        level_height = y_max - y_min
-        scale = min((self.width - 50) / level_width, (self.height - 50) / level_height)
+        level_width = x_max - x_min or 20
+        level_height = y_max - y_min or 20
+        scale = self.scale or min((self.width - 50) / level_width, (self.height - 50) / level_height)
 
         # A stack of Transforms
         self.transform = [
@@ -57,26 +69,9 @@ class LevelCanvas(tk.Canvas):
         x2_new, y2_new = self.transform_point((x2, y2))
         return super().create_oval(x1_new, y1_new, x2_new, y2_new, **options)
 
-    def handle_click(self, event):
-        node = self.level.navigation.closest_node(Position(*self.preimage_point((event.x,
-                                                                                 event.y))))
-
-        for line_id in self.path_lines:
-            self.delete(line_id)
-        self.path_lines = []
-        for room, segments in node.visible_rooms.items():
-            for segment in segments:
-                self.path_lines.append(self.create_line(segment.x1, segment.y1, segment.x2,
-                                                        segment.y2, fill='red'))
-
-
-        # path = self.level.navigation.search(self.level.player,
-        #                                     Position(*self.preimage_point((event.x, event.y))))
-        # if path is not None:
-        #     for line_id in self.path_lines:
-        #         self.delete(line_id)
-        #     self.path_lines = [self.create_line(node1.x, node1.y, node2.x, node2.y)
-        #                        for node1, node2 in zip(path, path[1:])]
+    def redraw(self):
+        self.delete('all')
+        self.level.draw(self)
 
 class Transform:
     def apply(self, pos):
@@ -113,7 +108,7 @@ class LevelView:
         self.root = tk.Tk()
         self.app = tk.Frame(self.root)
         self.canvas = LevelCanvas(self.app, self.level, width=width, height=height)
-        self.canvas.pack(side='top', fill=tk.BOTH, expand=1)
+        self.canvas.pack(side='top', fill=tk.BOTH, expand=True)
 
         if self.sequence:
             self.controls = tk.Frame(self.app)
@@ -124,7 +119,7 @@ class LevelView:
         self.app.pack()
 
     def start(self):
-        self.level.draw(self.canvas)
+        self.canvas.redraw()
         self.root.mainloop()
 
     def play(self):
@@ -132,12 +127,12 @@ class LevelView:
 
     def step(self):
         self.sequence.step()
-        self.canvas.delete('all')
-        self.level.draw(self.canvas)
+        self.canvas.redraw()
         self.root.after(int(1000 / FRAME_RATE), self.step)
 
 if __name__ == '__main__':
     filename = sys.argv[1]
-    level = Level.load(filename)
+    with open(filename, 'r') as f:
+        level = Level.load(f)
 
     LevelView(level).start()

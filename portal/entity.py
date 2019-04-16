@@ -1,3 +1,4 @@
+import colors
 from portal.geometry import Position, Segment
 from portal.planning import objects
 
@@ -10,8 +11,8 @@ class Player(objects.Player, Drawable):
     on_button = None
 
     def draw(self, canvas):
-        self._id = canvas.create_oval(self.x - 0.3, self.y - 0.3,
-                                      self.x + 0.3, self.y + 0.3, fill='red')
+        canvas.create_oval(self.x - 0.3, self.y - 0.3,
+                           self.x + 0.3, self.y + 0.3, fill=colors.PLAYER)
 
     def _updated_position(self):
         super()._updated_position()
@@ -44,27 +45,31 @@ class Player(objects.Player, Drawable):
 
 
 class Entity(Drawable):
+    def serialize(obj):
+        raise NotImplementedError
+
     @staticmethod
     def deserialize(obj):
         return ENTITY_TYPES[obj['type']].deserialize(obj)
+
 
 class Portal(Entity, objects.Portal):
     ORDER = 3
     SPEED = 0.2
     EPSILON = 0.01
     PROJECTILE_SIZE = 1
-    def __init__(self, pos1, pos2, name, color):
+    def __init__(self, pos1, pos2, name):
         objects.Object.__init__(self, name)
         self.set_endpoints(pos1, pos2)
-        self.color = color
+        self.color = colors.PORTAL1 if name == 'portal1' else colors.PORTAL2
         self.target = None
 
     def reset(self):
         self.set_endpoints(None, None)
 
     def set_endpoints(self, pos1, pos2):
-        self.pos1 = pos1
-        self.pos2 = pos2
+        self.pos1 = pos1.pos() if isinstance(pos1, Position) else pos1
+        self.pos2 = pos2.pos() if isinstance(pos2, Position) else pos2
         if pos1 and pos2:
             offset = Segment(self.pos1, self.pos2).offset(-0.1)
             self.x, self.y = offset.center().pos()
@@ -108,27 +113,31 @@ class Portal(Entity, objects.Portal):
             self.set_endpoints((segment.x1, segment.y1),
                                (segment.x2, segment.y2))
 
-    @classmethod
-    def deserialize(cls, obj):
+    def serialize(self):
+        s = { 'type': self.name }
+        if self.pos1 and self.pos:
+            s['pos1'] = self.pos1
+            s['pos2'] = self.pos2
+        return s
+
+    @staticmethod
+    def deserialize(obj):
         pos1 = obj.get('pos1')
         pos2 = obj.get('pos2')
+        name = obj['type']
         if pos1 and pos2:
-            return Portal(tuple(pos1), tuple(pos2), cls.NAME, cls.COLOR)
+            return Portal(tuple(pos1), tuple(pos2), name)
         else:
-            return Portal(None, None, cls.NAME, cls.COLOR)
-
-class Portal1(Portal):
-    NAME = 'portal1'
-    COLOR = 'orange'
-
-class Portal2(Portal):
-    NAME = 'portal2'
-    COLOR = 'dodger blue'
+            return Portal(None, None, name)
 
 class Cube(Entity, objects.Cube):
     ORDER = 2
     def draw(self, canvas):
-        canvas.create_rectangle(self.x - 0.3, self.y - 0.3, self.x + 0.3, self.y + 0.3, fill='black')
+        canvas.create_rectangle(self.x - 0.3, self.y - 0.3, self.x + 0.3, self.y + 0.3,
+                                fill=colors.CUBE)
+
+    def serialize(self):
+        return { 'type': 'cube', 'pos': self.pos() }
 
     @staticmethod
     def deserialize(obj):
@@ -137,16 +146,16 @@ class Cube(Entity, objects.Cube):
 class Button(objects.Button, Position):
     ORDER = 1
     DRAW_RADIUS = 0.8
-    def __init__(self, x, y):
-        objects.Button.__init__(self)
+    def __init__(self, x, y, name=None):
+        objects.Button.__init__(self, name)
         Position.__init__(self, x, y)
         self.objects = set()
 
     def draw(self, canvas):
         if self.is_active():
-            fill = 'dark red'
+            fill = colors.BUTTON_ACTIVE
         else:
-            fill = 'red'
+            fill = colors.BUTTON
         canvas.create_oval(self.x - Button.DRAW_RADIUS, self.y - Button.DRAW_RADIUS,
                            self.x + Button.DRAW_RADIUS, self.y + Button.DRAW_RADIUS,
                            fill=fill)
@@ -160,13 +169,16 @@ class Button(objects.Button, Position):
     def is_active(self):
         return bool(self.objects)
 
+    def serialize(self):
+        return { 'type': 'button', 'id': self.name, 'pos': self.pos() }
+
     @staticmethod
     def deserialize(obj):
-        return Button(*obj['pos'])
+        return Button(*obj['pos'], obj.get('id'))
 
 ENTITY_TYPES = {
-    'portal1': Portal1,
-    'portal2': Portal2,
+    'portal1': Portal,
+    'portal2': Portal,
     'cube': Cube,
     'button': Button
 }

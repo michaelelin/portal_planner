@@ -44,7 +44,11 @@ class ForwardSearchPlanner:
         self.problem = Problem.deserialize(portal_problem.serialize(), self.domain)
 
     def plan(self):
-        return self.parse_actions([a.serialize() for a in self.problem.plan()])
+        actions = self.problem.plan()
+        if actions is not None:
+            return self.parse_actions([a.serialize() for a in self.problem.plan()])
+        else:
+            return None
 
     def parse_actions(self, action_data):
         parsed = []

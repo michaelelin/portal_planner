@@ -1,6 +1,7 @@
 import math
 import tkinter as tk
 
+import colors
 from portal import geometry
 from portal.geometry import Position, Segment
 from portal.planning import objects
@@ -9,6 +10,9 @@ class WallSegment(Segment):
     def __init__(self, pos1, pos2, parent=None):
         super().__init__(pos1, pos2)
         self.parent = parent
+
+    def serialize(self):
+        return { 'vertices': [[self.x1, self.y1], [self.x2, self.y2]] }
 
     @staticmethod
     def deserialize(obj, entities):
@@ -40,7 +44,8 @@ class Wall(WallSegment):
                                              self))
 
     def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND,
+                           fill=colors.WALL)
 
 
 class Door(WallSegment, objects.Door):
@@ -56,8 +61,20 @@ class Door(WallSegment, objects.Door):
         return True
 
     def draw(self, canvas):
-        if not self.is_open():
-            canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill="green")
+        for trigger in self.triggers:
+            canvas.create_line(*self.center().pos(), *trigger.pos(),
+                               width=2.0,
+                               dash=(8, 8),
+                               fill=colors.TRIGGER)
+
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2,
+                           width=3.0,
+                           fill=colors.DOOR,
+                           dash=((4, 4) if self.is_open() else None))
+
+    def serialize(self):
+        return {**WallSegment.serialize(self),
+                **{ 'type': 'door', 'triggers': [t.name for t in self.triggers] }}
 
     @staticmethod
     def translate_properties(props, entities):
@@ -69,15 +86,25 @@ class Grill(WallSegment, objects.Grill):
         objects.Grill.__init__(self)
 
     def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, fill="light blue")
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=3.0, fill=colors.GRILL)
+
+    def serialize(self):
+        return {**WallSegment.serialize(self),
+                **{ 'type': 'grill' }}
 
 class Ledge(WallSegment):
     def draw(self, canvas):
-        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND)
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=2.0, capstyle=tk.ROUND,
+                           fill=colors.WALL)
         offset = self.offset(-0.2)
         canvas.create_line(offset.x1, offset.y1, offset.x2, offset.y2,
                            width=1.0,
-                           dash=(4, 4))
+                           dash=(4, 4),
+                           fill=colors.WALL)
+
+    def serialize(self):
+        return {**WallSegment.serialize(self),
+                **{ 'type': 'ledge' }}
 
 
 

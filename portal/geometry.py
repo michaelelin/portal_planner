@@ -57,6 +57,9 @@ class Segment:
     def center(self):
         return Position((self.x1 + self.x2) * 0.5, (self.y1 + self.y2) * 0.5)
 
+    def length(self):
+        return self.p1.distance(self.p2)
+
     # https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
     # Returns: 0 if no intersection
     #          1 if positive intersection

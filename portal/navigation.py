@@ -1,5 +1,6 @@
 import math
 
+import colors
 from portal.planning import objects
 from portal.search import AStarSearch
 from portal.wall import *
@@ -184,7 +185,7 @@ class NavigationNode(Position):
     def draw(self, canvas):
         canvas.create_rectangle(self.x - 0.5, self.y - 0.5,
                                 self.x + 0.5, self.y + 0.5,
-                                outline="gray")
+                                outline=colors.GRID)
 
     def __hash__(self):
         return hash((self.x, self.y))
