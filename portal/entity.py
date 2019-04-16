@@ -1,4 +1,4 @@
-import colors
+from portal import colors
 from portal.geometry import Position, Segment
 from portal.planning import objects
 

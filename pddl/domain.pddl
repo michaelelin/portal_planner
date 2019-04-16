@@ -208,22 +208,5 @@
    :effect (and (not (at ?portal ?portal-prev-loc))
                 (at ?portal ?portal-new-loc)))
 
-  (:action activate-portal-switch
-   :parameters (
-                ?player - player
-                ?switch - switch
-                ?portal - portal
-                ?switch-loc - location
-                ?portal-prev-loc - location
-                ?portal-new-loc - location
-                )
-   :precondition (and (at ?player ?switch-loc)
-                      (at ?portal ?portal-prev-loc)
-                      (switch-activates-portal ?switch ?portal ?portal-new-loc)
-                      (not (exists (?o - item)
-                                   (carrying ?player ?o))))
-   :effect (and (not (at ?portal ?portal-prev-loc))
-                (at ?portal ?portal-new-loc)))
-
   )
 

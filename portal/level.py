@@ -2,10 +2,10 @@ import json
 import os
 from collections import defaultdict
 
-import colors
+from portal import colors
 from portal.entity import Entity, Player, Portal, Button
 from portal.navigation import NavigationGraph
-from portal.wall import Segment, WallSegment
+from portal.wall import Segment, WallSegment, Door
 from portal.planning.problem import Problem
 from portal.geometry import Position, Segment
 

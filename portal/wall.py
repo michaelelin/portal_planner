@@ -1,7 +1,7 @@
 import math
 import tkinter as tk
 
-import colors
+from portal import colors
 from portal import geometry
 from portal.geometry import Position, Segment
 from portal.planning import objects
@@ -53,11 +53,7 @@ class PortalWall(Wall):
                                              self))
 
     def draw(self, canvas):
-        s1 = self.offset(-0.04)
-        s2 = self.offset(0.04)
-        canvas.create_line(s1.x1, s1.y1, s1.x2, s1.y2, width=2.0, capstyle=tk.ROUND,
-                           fill=colors.PORTAL_WALL)
-        canvas.create_line(s2.x1, s2.y1, s2.x2, s2.y2, width=2.0, capstyle=tk.ROUND,
+        canvas.create_line(self.x1, self.y1, self.x2, self.y2, width=4.0, capstyle=tk.ROUND,
                            fill=colors.PORTAL_WALL)
 
     def serialize(self):

@@ -1,4 +1,4 @@
-import colors
+from portal import colors
 from portal.geometry import Position
 from portal.wall import Wall, PortalWall, Ledge, Door, Grill
 from portal.entity import Portal, Cube, Button

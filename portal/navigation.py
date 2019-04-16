@@ -1,6 +1,6 @@
 import math
 
-import colors
+from portal import colors
 from portal.planning import objects
 from portal.search import AStarSearch
 from portal.wall import *
@@ -27,13 +27,14 @@ class NavigationGraph:
         x_max = math.ceil(x_max)
         y_max = math.ceil(y_max)
 
-        self.fill_nodes((x_min, y_min), Room(), (x_min, y_min, x_max, y_max))
-        outside = self.nodes
-        self.nodes = {}
+        # self.fill_nodes((x_min, y_min), Room(), (x_min, y_min, x_max, y_max))
+        # outside = self.nodes
+        # self.nodes = {}
 
         for y in range(y_min, y_max):
             for x in range(x_min, x_max):
-                if (x, y) not in self.nodes and (x, y) not in outside:
+                # if (x, y) not in self.nodes and (x, y) not in outside:
+                if (x, y) not in self.nodes:
                     room = Room()
                     self.fill_nodes((x, y), room, (x_min, y_min, x_max, y_max))
                     self.rooms.append(room)

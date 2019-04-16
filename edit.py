@@ -4,8 +4,8 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
 
-import colors
-import tools
+from portal import colors
+from portal import tools
 from view import LevelCanvas, LevelView
 from portal.animate import ActionSequence
 from portal.level import Level

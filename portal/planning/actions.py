@@ -41,12 +41,6 @@ class Pathfind(Action):
         if self.player.distance_squared(self.path[self.index]) < Pathfind.EPSILON:
             self.index += 1
 
-        # curr_node = self.path[self.index]
-        # next_node = self.path[self.index+1]
-        # self.player.move_toward(next_node, Pathfind.SPEED)
-        # if self.player.distance_squared(next_node) < Pathfind.EPSILON:
-        #     self.index += 1
-
     def finished(self):
         return self.index >= len(self.path)
 
@@ -143,7 +137,7 @@ class EnterDoor(Move):
         self.from_loc = from_loc
         self.to_loc = to_loc
 
-class CreatePortal(Action):
+class CreatePortal(Pathfind):
     def __init__(self, player, portal, player_loc, portal_from, portal_to):
         self.player = player
         self.portal = portal
@@ -165,17 +159,17 @@ class CreatePortal(Action):
 
     def step(self):
         if self.stage == 0:
-            if self.index < len(self.path) - 1:
-                curr_node = self.path[self.index]
-                next_node = self.path[self.index+1]
-                self.player.move_toward(next_node, Pathfind.SPEED)
-                if self.player.distance_squared(next_node) < Pathfind.EPSILON:
-                    self.index += 1
-
-            else:
+            if super().finished():
                 self.portal.reset()
                 self.portal.move_to(self.player)
                 self.stage = 1
+            else:
+                super().step()
+                # curr_node = self.path[self.index]
+                # next_node = self.path[self.index+1]
+                # self.player.move_toward(next_node, Pathfind.SPEED)
+                # if self.player.distance_squared(next_node) < Pathfind.EPSILON:
+                #     self.index += 1
         elif self.stage == 1:
             self.portal.move_toward(self.wall_segment.center(), entity.Portal.SPEED)
             if self.portal.distance_squared(self.wall_segment.center()) < entity.Portal.EPSILON:
